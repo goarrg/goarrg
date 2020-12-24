@@ -1,0 +1,38 @@
+{
+    "linters": {
+        "enable": [
+            "depguard",
+            "golint",
+            "gofmt",
+            "goimports",
+            "unconvert",
+            "interfacer",
+            "dupl",
+            "maligned",
+            "scopelint",
+            "whitespace"
+        ]
+    },
+    "linters-settings": {
+        "gofmt": {
+            "simplify": true
+        },
+        "depguard": {
+            "list-type": "whitelist",
+            "include-go-root": false,
+            "packages": [
+                "golang.org",
+                "goarrg.com"
+            ]
+        }
+    },
+    "issues": {
+        "exclude": [
+            ".*string `windows` has \\d+ occurrences, make it a constant",
+            ".*string `linux` has \\d+ occurrences, make it a constant",
+            ".*string `darwin` has \\d+ occurrences, make it a constant",
+            ".*should replace `.* \\+= 1` with `.*\\+\\+`",
+            ".*composite literal uses unkeyed fields"
+        ]
+    }
+}

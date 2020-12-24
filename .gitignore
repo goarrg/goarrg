@@ -1,0 +1,7 @@
+*.exe
+*.test
+*~
+.goarrg/
+.vscode
+core
+out.*
