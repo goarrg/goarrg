@@ -59,7 +59,3 @@ go get goarrg.com
 go run goarrg.com/cmd/goarrg build yourself -vv
 </pre>
 </details>
-
-## Examples
-
-To run the examples (excluding the shared folder), simply cd to the folder and run `goarrg run -vv`.<br/>
