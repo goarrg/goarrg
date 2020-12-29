@@ -59,39 +59,6 @@ func init() {
 }
 
 func depCheck() {
-	ex, err := os.Executable()
-
-	if err != nil {
-		panic(err)
-	}
-
-	sEx, err := os.Stat(ex)
-
-	if err != nil {
-		panic(err)
-	}
-
-	sData, err := os.Stat(usrData)
-
-	if err == nil {
-		sCache, err := os.Stat(os.Getenv("GOCACHE"))
-
-		if err != nil {
-			panic(err)
-		}
-
-		if sCache.ModTime().Before(sData.ModTime()) {
-			//clear build cache to prevent linking outdated C libs/headers
-			if err := exec.Run("go", "clean", "-cache", "-testcache", "goarrg.com/..."); err != nil {
-				panic(err)
-			}
-		}
-
-		if sData.ModTime().After(sEx.ModTime()) {
-			return
-		}
-	}
-
 	f, err := os.Open(filepath.Join(usrData, "dep.json"))
 
 	if err != nil {
