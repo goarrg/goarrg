@@ -109,10 +109,11 @@ func depDownload(name string, dep dep) {
 	src, err := os.Open(filepath.Join(srcDir, dep.file))
 
 	if err == nil {
-		defer src.Close()
-
 		if dep.verify == nil || dep.verify(src) == nil {
+			defer src.Close()
 			goto extract
+		} else {
+			src.Close()
 		}
 	}
 
@@ -135,6 +136,14 @@ retry:
 	if dep.verify != nil {
 		debug.LogI("Verifying dependency %s", name)
 		if err = dep.verify(src); err != nil {
+			if !retried {
+				debug.LogE("Failed to verify %s, redownloading", dep.file)
+				if err := src.Truncate(0); err != nil {
+					panic(err)
+				}
+				retried = true
+				goto retry
+			}
 			panic(err)
 		}
 	}
@@ -171,9 +180,10 @@ func depPrebuild() {
 }
 
 func Build() {
-	defer depPrebuild()
-
 	if depCheck(); !flagDep {
+		if !flagNoDep {
+			depPrebuild()
+		}
 		return
 	}
 
@@ -185,7 +195,7 @@ func Build() {
 	}
 
 	//clear build cache to prevent linking outdated C libs/headers
-	if err := exec.Run("go", "clean", "-cache", "-testcache", "goarrg.com/..."); err != nil {
+	if err := exec.Run("go", "clean", "-cache", "-testcache"); err != nil {
 		panic(err)
 	}
 
@@ -237,4 +247,5 @@ func Build() {
 	}
 
 	base.ResetCWD()
+	depPrebuild()
 }

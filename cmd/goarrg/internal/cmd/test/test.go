@@ -31,7 +31,7 @@ import (
 var CMD = &base.CMD{
 	Run:   run,
 	Name:  "test",
-	Short: "run tests in current directory",
+	Short: "Tests project in current directory",
 	Long:  "",
 	CMDs:  map[string]*base.CMD{},
 }
