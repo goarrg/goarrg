@@ -30,8 +30,7 @@ const sdlStaticConfigLinux = ``
 const sdlConfigWindows = `Libs: -L${libdir} -lmingw32 -lSDL2main -lSDL2 -mwindows
 Cflags: -I${includedir} -Dmain=SDL_main`
 
-const sdlStaticConfigWindows = `Libs: -L${libdir} -lmingw32 -lSDL2main ${libdir}/libSDL2-static.a -mwindows -Wl,--no-undefined -lm -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lsetupapi -lversion -luuid
-Cflags: -I${includedir} -Dmain=SDL_main`
+const sdlStaticConfigWindows = `Libs: -L${libdir} -lmingw32 -lSDL2main -lSDL2-static -mwindows -Wl,--no-undefined -lm -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lsetupapi -lversion -luuid`
 
 func sdlWindows() {
 	cmakeArgs := []string{
