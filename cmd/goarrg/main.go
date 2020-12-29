@@ -25,12 +25,14 @@ import (
 	"goarrg.com/cmd/goarrg/internal/cmd/build"
 	"goarrg.com/cmd/goarrg/internal/cmd/clean"
 	"goarrg.com/cmd/goarrg/internal/cmd/run"
+	"goarrg.com/cmd/goarrg/internal/cmd/test"
 )
 
 var cmds = map[string]*base.CMD{
 	clean.CMD.Name: clean.CMD,
 	build.CMD.Name: build.CMD,
 	run.CMD.Name:   run.CMD,
+	test.CMD.Name:  test.CMD,
 }
 
 func main() {
