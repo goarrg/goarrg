@@ -19,8 +19,36 @@ limitations under the License.
 package gmath
 
 import (
+	"math/rand"
 	"testing"
 )
+
+func TestLookAt(t *testing.T) {
+	for i := 0; i < 1e6; i++ {
+		p1 := Point3f64{
+			X: rand.Float64(),
+			Y: rand.Float64(),
+			Z: rand.Float64(),
+		}
+
+		p2 := Point3f64{
+			X: rand.Float64(),
+			Y: rand.Float64(),
+			Z: rand.Float64(),
+		}
+
+		tr := Transform{Pos: p1}
+		tr.LookAt(p2)
+
+		f := tr.TransformDirection(Vector3f64{Z: 1})
+		d := p1.VectorTo(p2).Normalize()
+
+		if f.Subtract(d).Magnitude() > 0.000001 {
+			t.Logf("Want: %f but got %f\n", d, f)
+			t.FailNow()
+		}
+	}
+}
 
 func BenchmarkLookAt(b *testing.B) {
 	t := Transform{}

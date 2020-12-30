@@ -22,12 +22,7 @@ import (
 	"math"
 	"math/rand"
 	"testing"
-	"time"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 func (m Matrix4f64) MultiplyPoint(p Point3f64) Point3f64 {
 	return Point3f64{
