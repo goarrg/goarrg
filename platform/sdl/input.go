@@ -20,37 +20,19 @@ package sdl
 	#include "event.h"
 */
 import "C"
-import (
-	"goarrg.com/debug"
-	"goarrg.com/input"
-)
+import "goarrg.com/input"
 
-type inputState struct {
+type inputSystem struct {
 	mouse    mouse
 	keyboard keyboard
 }
 
-type inputSystem struct {
-	lastState inputState
+func (i *inputSystem) init() {
+	input.RegisterDevice(&i.mouse)
+	input.RegisterDevice(&i.keyboard)
 }
 
-func (i *inputState) Device(d input.DeviceType) (input.Device, error) {
-	switch d {
-	case input.DeviceTypeMouse:
-		return &i.mouse, nil
-	case input.DeviceTypeKeyboard:
-		return &i.keyboard, nil
-	default:
-		return nil, debug.ErrorNew("Unknown device ID")
-	}
-}
-
-func (i *inputSystem) update(e C.goEvent) *inputState {
-	state := inputState{
-		mouse:    mouseState(e),
-		keyboard: keyboardState(e),
-	}
-
-	i.lastState = state
-	return &state
+func (i *inputSystem) update(e C.goEvent) {
+	i.mouse.update(e)
+	i.keyboard.update(e)
 }

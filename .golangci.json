@@ -2,20 +2,27 @@
     "linters": {
         "enable": [
             "depguard",
-            "golint",
+            "dupl",
+            "exportloopref",
             "gofmt",
             "goimports",
+            "golint",
+            "govet",
             "unconvert",
-            "interfacer",
-            "dupl",
-            "maligned",
-            "scopelint",
             "whitespace"
         ]
     },
     "linters-settings": {
         "gofmt": {
             "simplify": true
+        },
+        "govet": {
+            "enable-all": true,
+            "disable": [
+                "composites",
+                "fieldalignment",
+                "shadow"
+            ]
         },
         "depguard": {
             "list-type": "whitelist",
@@ -30,9 +37,7 @@
         "exclude": [
             ".*string `windows` has \\d+ occurrences, make it a constant",
             ".*string `linux` has \\d+ occurrences, make it a constant",
-            ".*string `darwin` has \\d+ occurrences, make it a constant",
-            ".*should replace `.* \\+= 1` with `.*\\+\\+`",
-            ".*composite literal uses unkeyed fields"
+            ".*string `darwin` has \\d+ occurrences, make it a constant"
         ]
     }
 }

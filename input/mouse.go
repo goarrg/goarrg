@@ -24,6 +24,5 @@ const (
 	MouseBack
 	MouseForward
 	MouseWheel
-
 	MouseMotion
 )

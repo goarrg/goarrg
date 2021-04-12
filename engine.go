@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"goarrg.com/debug"
-	"goarrg.com/input"
 	"goarrg.com/internal/trace"
 )
 
@@ -29,14 +28,14 @@ type Platform interface {
 	Init() error
 	AudioInit(Audio) error
 	DisplayInit(Renderer) error
-	Update() input.Snapshot
+	Update()
 	Shutdown()
 	Destroy()
 }
 
 type Program interface {
 	Init() error
-	Update(float64, input.Snapshot)
+	Update(float64)
 	Shutdown() bool
 	Destroy()
 }
@@ -122,12 +121,10 @@ func Run(cfg Config) error {
 	deltaTime := float64(0.0)
 
 	for Running() {
-		traceEnd := debug.TraceStart("Platform Update")
-		input := system.platform.Update()
-		traceEnd()
+		debug.Trace("Platform Update", system.platform.Update)
 
-		traceEnd = debug.TraceStart("Program Update")
-		system.program.Update(deltaTime, input)
+		traceEnd := debug.TraceStart("Program Update")
+		system.program.Update(deltaTime)
 		traceEnd()
 
 		debug.Trace("Audio Update", system.audio.Update)

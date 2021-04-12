@@ -18,16 +18,51 @@ package input
 
 import "goarrg.com/gmath"
 
-type Snapshot interface {
-	Device(DeviceType) (Device, error)
+type State interface {
+	isInputState()
 }
 
+type StateDelta interface {
+	isInputStateDelta()
+}
+
+/*
+	Value represents a linear action such as a button or analogue trigger.
+	For buttons this is either a 0 or a 1 or a delta of -1.
+	For analogue actions this would be between 0.0 and 1.0 inclusive.
+*/
 type Value float32
 
+/*
+	Axis represents a 3D vector action such as mouse or analogue stick movement.
+*/
 type Axis struct {
 	gmath.Vector3f64
 }
 
+/*
+	Coords represents a 3D position action such as mouse or tap position.
+*/
 type Coords struct {
 	gmath.Point3f64
+}
+
+func (v Value) isInputState() {
+
+}
+
+func (v Value) isInputStateDelta() {
+
+}
+
+func (a Axis) isInputState() {
+
+}
+
+func (a Axis) isInputStateDelta() {
+
+}
+
+func (a Coords) isInputState() {
+
 }

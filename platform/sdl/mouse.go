@@ -28,29 +28,26 @@ import (
 )
 
 type mouse struct {
-	motion      input.Coords
-	motionDelta input.Axis
-	wheelDelta  input.Axis
-	state       uint32
-	events      uint32
+	motion       input.Coords
+	motionDelta  input.Axis
+	wheel        input.Axis
+	wheelDelta   input.Axis
+	currentState uint8
+	lastState    uint8
 }
 
-func (m *mouse) Type() input.DeviceType {
+func (m *mouse) Type() string {
 	return input.DeviceTypeMouse
 }
 
-func (m *mouse) ID() input.DeviceID {
-	return 0
-}
-
-func (m *mouse) StateFor(a input.DeviceAction) interface{} {
+func (m *mouse) StateFor(a input.DeviceAction) input.State {
 	switch a {
 	case input.MouseMotion:
 		return m.motion
 	case input.MouseWheel:
-		return input.Axis{}
+		return m.wheel
 	case input.MouseLeft, input.MouseMiddle, input.MouseRight, input.MouseBack, input.MouseForward:
-		if m.state&(1<<a) != 0 {
+		if m.currentState&(1<<a) != 0 {
 			return input.Value(1)
 		}
 
@@ -60,14 +57,14 @@ func (m *mouse) StateFor(a input.DeviceAction) interface{} {
 	return nil
 }
 
-func (m *mouse) StateDeltaFor(a input.DeviceAction) interface{} {
+func (m *mouse) StateDeltaFor(a input.DeviceAction) input.StateDelta {
 	switch a {
 	case input.MouseMotion:
 		return m.motionDelta
 	case input.MouseWheel:
 		return m.wheelDelta
 	case input.MouseLeft, input.MouseMiddle, input.MouseRight, input.MouseBack, input.MouseForward:
-		if m.state&(1<<a) != 0 {
+		if m.ActionStartedFor(a) {
 			return input.Value(1)
 		}
 
@@ -82,19 +79,21 @@ func (m *mouse) StateDeltaFor(a input.DeviceAction) interface{} {
 }
 
 func (m *mouse) ActionStartedFor(a input.DeviceAction) bool {
-	return m.events&(1<<(2*a)) != 0
+	mask := uint8(1 << a)
+	return ((m.currentState & mask) - (m.lastState & mask)) == mask
 }
 
 func (m *mouse) ActionEndedFor(a input.DeviceAction) bool {
-	return m.events&(1<<((2*a)+1)) != 0
+	mask := uint8(1 << a)
+	return ((m.lastState & mask) - (m.currentState & mask)) == mask
 }
 
-func mouseState(e C.goEvent) mouse {
+func (m *mouse) update(e C.goEvent) {
 	var cX, cY C.int
 
-	state := mouse{}
-	state.state = uint32(C.SDL_GetMouseState(&cX, &cY)) << 1
-	state.motion = input.Coords{
+	m.lastState = m.currentState
+	m.currentState = uint8(C.SDL_GetMouseState(&cX, &cY)) << 1
+	m.motion = input.Coords{
 		Point3f64: gmath.Point3f64{
 			X: float64(cX),
 			Y: float64(cY),
@@ -102,38 +101,30 @@ func mouseState(e C.goEvent) mouse {
 	}
 
 	C.SDL_GetRelativeMouseState(&cX, &cY)
-	state.motionDelta = input.Axis{
+	m.motionDelta = input.Axis{
 		Vector3f64: gmath.Vector3f64{
 			X: float64(cX),
 			Y: float64(cY),
 		},
 	}
 
-	if state.motionDelta != (input.Axis{}) {
-		state.events |= 1 << (2 * input.MouseMotion)
-	} else if Platform.input.lastState.mouse.motionDelta != (input.Axis{}) {
-		state.events |= 1 << ((2 * input.MouseMotion) + 1)
+	if m.motionDelta != (input.Axis{}) {
+		m.currentState |= uint8(1 << input.MouseMotion)
 	}
 
-	if e.mouseWheelX != 0 || e.mouseWheelY != 0 {
-		state.wheelDelta = input.Axis{
-			Vector3f64: gmath.Vector3f64{
-				X: float64(e.mouseWheelX),
-				Y: float64(e.mouseWheelY),
-			},
-		}
-		state.events |= 1 << (2 * input.MouseWheel)
-	} else if Platform.input.lastState.mouse.wheelDelta != (input.Axis{}) {
-		state.events |= 1 << ((2 * input.MouseWheel) + 1)
+	oldWheel := m.wheel
+	m.wheel = input.Axis{
+		Vector3f64: gmath.Vector3f64{
+			X: float64(e.mouseWheelX),
+			Y: float64(e.mouseWheelY),
+		},
 	}
 
-	for i := input.MouseLeft; i < input.MouseWheel; i++ {
-		if (state.state&(1<<i) != 0) && (Platform.input.lastState.mouse.state&(1<<i) == 0) {
-			state.events |= 1 << (2 * i)
-		} else if (state.state&(1<<i) == 0) && (Platform.input.lastState.mouse.state&(1<<i) != 0) {
-			state.events |= 1 << ((2 * i) + 1)
-		}
+	m.wheelDelta = input.Axis{
+		Vector3f64: m.wheel.Vector3f64.Subtract(oldWheel.Vector3f64),
 	}
 
-	return state
+	if m.wheelDelta != (input.Axis{}) {
+		m.currentState |= uint8(1 << input.MouseWheel)
+	}
 }

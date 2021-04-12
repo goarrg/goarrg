@@ -31,7 +31,6 @@ import (
 
 	"goarrg.com"
 	"goarrg.com/debug"
-	"goarrg.com/input"
 )
 
 type platform struct {
@@ -57,6 +56,7 @@ func (*platform) Init() error {
 		C.SDL_EventState(C.SDL_KEYDOWN, C.SDL_DISABLE)
 		C.SDL_EventState(C.SDL_KEYUP, C.SDL_DISABLE)
 
+		C.SDL_EventState(C.SDL_MOUSEMOTION, C.SDL_DISABLE)
 		C.SDL_EventState(C.SDL_MOUSEBUTTONDOWN, C.SDL_DISABLE)
 		C.SDL_EventState(C.SDL_MOUSEBUTTONUP, C.SDL_DISABLE)
 
@@ -68,6 +68,8 @@ func (*platform) Init() error {
 			return
 		}
 
+		Platform.input.init()
+
 		err = nil
 		debug.LogV("Platform initialized")
 	})
@@ -75,7 +77,7 @@ func (*platform) Init() error {
 	return err
 }
 
-func (*platform) Update() input.Snapshot {
+func (*platform) Update() {
 	Platform.audio.update()
 
 	cEvent := C.goEvent{
@@ -96,7 +98,7 @@ func (*platform) Update() input.Snapshot {
 		})
 	}
 
-	return Platform.input.update(cEvent)
+	Platform.input.update(cEvent)
 }
 
 func (*platform) Shutdown() {

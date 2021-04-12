@@ -30,28 +30,24 @@ import (
 )
 
 type keyboard struct {
-	state  [^input.DeviceAction(0)]bool
-	events [int(^input.DeviceAction(0)) * 2]bool
+	currentState [^input.DeviceAction(0)]bool
+	lastState    [^input.DeviceAction(0)]bool
 }
 
-func (k *keyboard) Type() input.DeviceType {
+func (k *keyboard) Type() string {
 	return input.DeviceTypeKeyboard
 }
 
-func (k *keyboard) ID() input.DeviceID {
-	return 0
-}
-
-func (k *keyboard) StateFor(a input.DeviceAction) interface{} {
-	if k.state[a] {
+func (k *keyboard) StateFor(a input.DeviceAction) input.State {
+	if k.currentState[a] {
 		return input.Value(1)
 	}
 
 	return input.Value(0)
 }
 
-func (k *keyboard) StateDeltaFor(a input.DeviceAction) interface{} {
-	if k.state[a] {
+func (k *keyboard) StateDeltaFor(a input.DeviceAction) input.StateDelta {
+	if k.ActionStartedFor(a) {
 		return input.Value(1)
 	}
 
@@ -63,15 +59,16 @@ func (k *keyboard) StateDeltaFor(a input.DeviceAction) interface{} {
 }
 
 func (k *keyboard) ActionStartedFor(a input.DeviceAction) bool {
-	return k.events[2*a]
+	return k.currentState[a] && !k.lastState[a]
 }
 
 func (k *keyboard) ActionEndedFor(a input.DeviceAction) bool {
-	return k.events[(2*a)+1]
+	return k.lastState[a] && !k.currentState[a]
 }
 
-func keyboardState(C.goEvent) keyboard {
-	state := keyboard{}
+func (k *keyboard) update(C.goEvent) {
+	k.lastState = k.currentState
+
 	cNumKeys := C.int(0)
 	cKB := C.SDL_GetKeyboardState(&cNumKeys)
 	kb := *(*[]uint8)(unsafe.Pointer(&reflect.SliceHeader{
@@ -79,16 +76,6 @@ func keyboardState(C.goEvent) keyboard {
 	}))
 
 	for i := input.KeyA; i < input.KeyRightGUI; i++ {
-		state.state[i] = kb[i] == 1
-
-		if state.state[i] {
-			if !Platform.input.lastState.keyboard.state[i] {
-				state.events[2*i] = true
-			}
-		} else if Platform.input.lastState.keyboard.state[i] {
-			state.events[(2*i)+1] = true
-		}
+		k.currentState[i] = kb[i] == 1
 	}
-
-	return state
 }
