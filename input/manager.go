@@ -49,9 +49,9 @@ func RegisterDevice(d Device) {
 }
 
 /*
-	GetDeviceOfType retruns the first found device of the given type or nil.
+	DeviceOfType retruns the first found device of the given type or nil.
 */
-func GetDeviceOfType(t string) Device {
+func DeviceOfType(t string) Device {
 	v, ok := manager.Load(t)
 
 	if ok {
@@ -62,10 +62,10 @@ func GetDeviceOfType(t string) Device {
 }
 
 /*
-	GetDevicesOfType retruns a copy of the slice containing all the devices of
+	DevicesOfType retruns a copy of the slice containing all the devices of
 	a given type or nil.
 */
-func GetDevicesOfType(t string) []Device {
+func DevicesOfType(t string) []Device {
 	v, ok := manager.Load(t)
 
 	if ok {
