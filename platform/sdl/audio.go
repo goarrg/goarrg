@@ -54,7 +54,7 @@ const (
 	AudioChannelCount                    = audio.ChannelCount + 1
 
 	audioChannelMaskMono            = audioChannelMask(1 << audio.ChannelLeft)
-	audioChannelMaskStereo          = audioChannelMask((1 << audio.ChannelLeft) | (1 << audio.ChannelRight))
+	audioChannelMaskStereo          = audioChannelMaskMono | audioChannelMask(1<<audio.ChannelRight)
 	audioChannelMask2Point1         = audioChannelMaskStereo | audioChannelMask(1<<audio.ChannelLowFrequency)
 	audioChannelMaskQuad            = audioChannelMaskStereo | audioChannelMask((1<<audio.ChannelBackSurroundLeft)|(1<<audio.ChannelBackSurroundRight))
 	audioChannelMaskQuadCenter      = audioChannelMaskQuad | audioChannelMask(1<<audio.ChannelCenter)
@@ -136,7 +136,7 @@ func verifyChannelList(list []audio.Channel) ([]audio.Channel, error) {
 	m := audioChannelMask(0)
 
 	for _, c := range list {
-		m = m | audioChannelMask(c)
+		m = m | audioChannelMask(1<<c)
 	}
 
 	switch m {
@@ -340,6 +340,8 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 	Platform.audio.buf = make([]float32, cfg.Spec.Frequency*len(cfg.Spec.Channels))
 
 	C.SDL_PauseAudioDevice(cAID, 0)
+
+	debug.LogI("SDL initialized audio device with config: %+v", cfg)
 	return nil
 }
 
