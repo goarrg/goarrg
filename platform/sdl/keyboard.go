@@ -69,6 +69,11 @@ func (k *keyboard) ActionEndedFor(a input.DeviceAction) bool {
 func (k *keyboard) update(C.goEvent) {
 	k.lastState = k.currentState
 
+	if !Platform.display.hasKeyboardFocus() {
+		k.currentState = [^input.DeviceAction(0)]bool{}
+		return
+	}
+
 	cNumKeys := C.int(0)
 	cKB := C.SDL_GetKeyboardState(&cNumKeys)
 	kb := *(*[]uint8)(unsafe.Pointer(&reflect.SliceHeader{

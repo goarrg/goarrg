@@ -48,6 +48,14 @@ func (*platform) DisplayInit(renderer goarrg.Renderer) error {
 	return debug.ErrorNew("Invalid renderer")
 }
 
+func (d *displaySystem) hasKeyboardFocus() bool {
+	return d.mainWindow.keyboardFocus
+}
+
+func (d *displaySystem) hasMouseFocus() bool {
+	return d.mainWindow.mouseFocus
+}
+
 func (d *displaySystem) destroy() {
 	if d.mainWindow != nil {
 		d.mainWindow.destroy()

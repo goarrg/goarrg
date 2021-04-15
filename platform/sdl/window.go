@@ -67,9 +67,11 @@ type windowAPI interface {
 }
 
 type window struct {
-	cWindow *C.SDL_Window
-	api     windowAPI
-	cID     C.uint32_t
+	cWindow       *C.SDL_Window
+	api           windowAPI
+	cID           C.uint32_t
+	keyboardFocus bool
+	mouseFocus    bool
 }
 
 func createWindow(flags C.uint32_t) error {
@@ -141,6 +143,16 @@ func (window *window) processEvent(e windowEvent) {
 		window.api.resize(int(e.w), int(e.h))
 	case (e.event & windowEventCreated) != 0:
 		C.SDL_ShowWindow(window.cWindow)
+
+	case (e.event & windowEventFocusGained) != 0:
+		window.keyboardFocus = true
+	case (e.event & windowEventFocusLost) != 0:
+		window.keyboardFocus = false
+
+	case (e.event & windowEventEnter) != 0:
+		window.mouseFocus = true
+	case (e.event & windowEventLeave) != 0:
+		window.mouseFocus = false
 	}
 }
 

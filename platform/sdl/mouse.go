@@ -92,6 +92,14 @@ func (m *mouse) update(e C.goEvent) {
 	var cX, cY C.int
 
 	m.lastState = m.currentState
+
+	if !Platform.display.hasMouseFocus() {
+		m.currentState = 0
+		m.motionDelta = input.Axis{}
+		m.wheelDelta = input.Axis{}
+		return
+	}
+
 	m.currentState = uint8(C.SDL_GetMouseState(&cX, &cY)) << 1
 	m.motion = input.Coords{
 		Point3f64: gmath.Point3f64{
