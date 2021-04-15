@@ -91,10 +91,6 @@ func (*platform) Update() {
 	if cEvent.windowState != 0 {
 		Platform.display.mainWindow.processEvent(windowEvent{
 			uint32(cEvent.windowState),
-			int32(cEvent.windowX),
-			int32(cEvent.windowY),
-			int32(cEvent.windowW),
-			int32(cEvent.windowH),
 		})
 	}
 

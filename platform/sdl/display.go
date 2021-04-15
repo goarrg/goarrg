@@ -19,6 +19,7 @@ package sdl
 import (
 	"goarrg.com"
 	"goarrg.com/debug"
+	"goarrg.com/gmath"
 )
 
 type displaySystem struct {
@@ -54,6 +55,15 @@ func (d *displaySystem) hasKeyboardFocus() bool {
 
 func (d *displaySystem) hasMouseFocus() bool {
 	return d.mainWindow.mouseFocus
+}
+
+func (d *displaySystem) pointInsideWindow(p gmath.Point3i) bool {
+	return p.X >= d.mainWindow.bounds.Min.X && p.X <= d.mainWindow.bounds.Max.X &&
+		p.Y >= d.mainWindow.bounds.Min.Y && p.Y <= d.mainWindow.bounds.Max.Y
+}
+
+func (d *displaySystem) globalPointToRelativePoint(p gmath.Point3i) gmath.Point3i {
+	return gmath.Point3i(gmath.Vector3i(p).Subtract(d.mainWindow.bounds.Min))
 }
 
 func (d *displaySystem) destroy() {

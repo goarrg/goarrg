@@ -37,6 +37,7 @@ import (
 	"unsafe"
 
 	"goarrg.com/debug"
+	"goarrg.com/gmath"
 )
 
 //nolint:deadcode,varcheck,unused
@@ -44,8 +45,7 @@ const (
 	windowEventCreated uint32 = (1 << iota)
 	windowEventShown
 	windowEventHidden
-	windowEventMoved
-	windowEventResized
+	windowEventRectChanged
 	windowEventEnter
 	windowEventLeave
 	windowEventFocusGained
@@ -55,10 +55,6 @@ const (
 
 type windowEvent struct {
 	event uint32
-	x     int32
-	y     int32
-	w     int32
-	h     int32
 }
 
 type windowAPI interface {
@@ -67,6 +63,8 @@ type windowAPI interface {
 }
 
 type window struct {
+	rect          gmath.Recti
+	bounds        gmath.Bounds3i
 	cWindow       *C.SDL_Window
 	api           windowAPI
 	cID           C.uint32_t
@@ -139,10 +137,40 @@ func createWindow(flags C.uint32_t) error {
 
 func (window *window) processEvent(e windowEvent) {
 	switch {
-	case (e.event & windowEventResized) != 0:
-		window.api.resize(int(e.w), int(e.h))
 	case (e.event & windowEventCreated) != 0:
 		C.SDL_ShowWindow(window.cWindow)
+
+		cRect := C.SDL_Rect{}
+		C.SDL_GetWindowPosition(window.cWindow, &cRect.x, &cRect.y)
+		C.SDL_GetWindowSize(window.cWindow, &cRect.w, &cRect.h)
+
+		window.rect = gmath.Recti{X: int(cRect.x), Y: int(cRect.y), W: int(cRect.w), H: int(cRect.h)}
+		window.bounds.Min = gmath.Vector3i{X: window.rect.X, Y: window.rect.Y}
+		window.bounds.Max = gmath.Vector3i{X: window.rect.W, Y: window.rect.H}.Add(window.bounds.Min)
+
+		// we will always have keyboard focus at this point
+		window.keyboardFocus = true
+		/*
+			we may have mouse focus, without this when we would not get a focus
+			entered event until the mouse leave and re-enters. for when we
+			actually do not have mouse focus, the pointInsideWindow should cover
+			that since the window will be on top of everything.
+		*/
+		window.mouseFocus = true
+
+	case (e.event & windowEventRectChanged) != 0:
+		cRect := C.SDL_Rect{}
+		C.SDL_GetWindowPosition(window.cWindow, &cRect.x, &cRect.y)
+		C.SDL_GetWindowSize(window.cWindow, &cRect.w, &cRect.h)
+
+		oldRect := window.rect
+		window.rect = gmath.Recti{X: int(cRect.x), Y: int(cRect.y), W: int(cRect.w), H: int(cRect.h)}
+		window.bounds.Min = gmath.Vector3i{X: window.rect.X, Y: window.rect.Y}
+		window.bounds.Max = gmath.Vector3i{X: window.rect.W, Y: window.rect.H}.Add(window.bounds.Min)
+
+		if oldRect.W != window.rect.W || oldRect.H != window.rect.H {
+			window.api.resize(window.rect.W, window.rect.H)
+		}
 
 	case (e.event & windowEventFocusGained) != 0:
 		window.keyboardFocus = true

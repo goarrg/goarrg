@@ -108,11 +108,21 @@ func (m *mouse) update(e C.goEvent) {
 		return
 	}
 
-	m.currentState = uint8(C.SDL_GetMouseState(&cX, &cY)) << 1
+	m.currentState = uint8(C.SDL_GetGlobalMouseState(&cX, &cY)) << 1
+	pos := gmath.Point3i{X: int(cX), Y: int(cY)}
+
+	if !Platform.display.pointInsideWindow(pos) {
+		m.currentState = 0
+		m.motionDelta = input.Axis{}
+		m.wheelDelta = input.Axis{}
+		return
+	}
+
+	pos = Platform.display.globalPointToRelativePoint(pos)
 	m.motion = input.Coords{
 		Point3f64: gmath.Point3f64{
-			X: float64(cX),
-			Y: float64(cY),
+			X: float64(pos.X),
+			Y: float64(pos.Y),
 		},
 	}
 

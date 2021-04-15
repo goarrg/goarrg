@@ -24,25 +24,20 @@ limitations under the License.
 #define WINDOW_SHOWN        (0x1u << 1)
 #define WINDOW_HIDDEN       (0x1u << 2)
 
-#define WINDOW_MOVED        (0x1u << 3)
-#define WINDOW_RESIZED      (0x1u << 4)
+#define WINDOW_RECT_CHANGED (0x1u << 3)
 
-#define WINDOW_ENTER        (0x1u << 5)
-#define WINDOW_LEAVE        (0x1u << 6)
+#define WINDOW_ENTER        (0x1u << 4)
+#define WINDOW_LEAVE        (0x1u << 5)
 
-#define WINDOW_FOCUS_GAINED (0x1u << 7)
-#define WINDOW_FOCUS_LOST   (0x1u << 8)
+#define WINDOW_FOCUS_GAINED (0x1u << 6)
+#define WINDOW_FOCUS_LOST   (0x1u << 7)
 
-#define WINDOW_CLOSE        (0x1u << 9)
+#define WINDOW_CLOSE        (0x1u << 8)
 // clang-format on
 
 typedef struct {
 	uint32_t window;
 	uint32_t windowState;
-	int32_t windowX;
-	int32_t windowY;
-	int32_t windowW;
-	int32_t windowH;
 
 	int32_t mouseWheelX;
 	int32_t mouseWheelY;
