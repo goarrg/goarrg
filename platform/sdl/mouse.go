@@ -79,11 +79,19 @@ func (m *mouse) StateDeltaFor(a input.DeviceAction) input.StateDelta {
 }
 
 func (m *mouse) ActionStartedFor(a input.DeviceAction) bool {
+	if a > input.MouseMotion {
+		return false
+	}
+
 	mask := uint8(1 << a)
 	return ((m.currentState & mask) - (m.lastState & mask)) == mask
 }
 
 func (m *mouse) ActionEndedFor(a input.DeviceAction) bool {
+	if a > input.MouseMotion {
+		return false
+	}
+
 	mask := uint8(1 << a)
 	return ((m.lastState & mask) - (m.currentState & mask)) == mask
 }
