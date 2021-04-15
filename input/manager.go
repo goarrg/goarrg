@@ -74,3 +74,31 @@ func DevicesOfType(t string) []Device {
 
 	return nil
 }
+
+/*
+	Scan returns the device and action that had a DeviceAction triggered this
+	frame or nil and 0. This is useful for input mapping without having to
+	specifically code to support every device type.
+
+	As this is only meant to be used for key mapping, we can assume there will
+	only be one input a frame and that speed isn't too important so just check
+	everything.
+*/
+func Scan() (device Device, action DeviceAction) {
+	manager.Range(func(key, value interface{}) bool {
+		l := value.([]Device)
+
+		for _, d := range l {
+			for i := DeviceAction(0); i < (^DeviceAction(0)); i++ {
+				if d.ActionStartedFor(i) {
+					device = d
+					action = i
+					return false
+				}
+			}
+		}
+		return true
+	})
+
+	return device, action
+}
