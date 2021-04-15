@@ -16,7 +16,9 @@ limitations under the License.
 
 package input
 
-import "sync"
+import (
+	"sync"
+)
 
 var manager struct {
 	sync.Map
@@ -76,21 +78,50 @@ func DevicesOfType(t string) []Device {
 }
 
 /*
-	Scan returns the device and action that had a DeviceAction triggered this
-	frame or nil and 0. This is useful for input mapping without having to
-	specifically code to support every device type.
+	ScanMask represents a bitmask of the types of input events to scan for.
+*/
+type ScanMask uint8
+
+const (
+	ScanValue = 1 << iota
+	ScanAxis
+	ScanCoords
+)
+
+/*
+	Scan returns the device and the action, using mask to filter action types,
+	that had a DeviceAction triggered this frame or nil and 0.
+
+	This is useful for input mapping without having to specifically code to
+	support every device type.
 
 	As this is only meant to be used for key mapping, we can assume there will
 	only be one input a frame and that speed isn't too important so just check
 	everything.
 */
-func Scan() (device Device, action DeviceAction) {
-	manager.Range(func(key, value interface{}) bool {
-		l := value.([]Device)
+func Scan(mask ScanMask) (device Device, action DeviceAction) {
+	if mask == 0 {
+		return nil, 0
+	}
 
-		for _, d := range l {
+	manager.Range(func(key, value interface{}) bool {
+		for _, d := range value.([]Device) {
 			for i := DeviceAction(0); i < (^DeviceAction(0)); i++ {
 				if d.ActionStartedFor(i) {
+					switch d.StateFor(i).(type) {
+					case Value:
+						if mask&ScanValue == 0 {
+							continue
+						}
+					case Axis:
+						if mask&ScanAxis == 0 {
+							continue
+						}
+					case Coords:
+						if mask&ScanCoords == 0 {
+							continue
+						}
+					}
 					device = d
 					action = i
 					return false

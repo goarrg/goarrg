@@ -56,7 +56,7 @@ func TestScan(t *testing.T) {
 	a := DeviceAction(rand.Intn(int(^DeviceAction(0))))
 	devices[i].currentState[a] = true
 
-	d, a2 := Scan()
+	d, a2 := Scan(ScanValue)
 
 	if d != &devices[i] {
 		t.Fatal("Device mismatch")
@@ -77,7 +77,7 @@ func BenchmarkScan(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		device, action = Scan()
+		device, action = Scan(8)
 	}
 
 	if device != nil {
