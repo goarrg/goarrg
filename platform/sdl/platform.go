@@ -23,6 +23,10 @@ package sdl
 	#include "event.h"
 
 	extern int processEvents(goEvent*);
+
+	static void setHints() {
+		SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
+	}
 */
 import "C"
 import (
@@ -60,6 +64,8 @@ func (*platform) Init() error {
 		C.SDL_EventState(C.SDL_MOUSEBUTTONDOWN, C.SDL_DISABLE)
 		C.SDL_EventState(C.SDL_MOUSEBUTTONUP, C.SDL_DISABLE)
 
+		C.setHints()
+
 		C.SDL_SetMainReady()
 		if C.SDL_Init(C.SDL_INIT_VIDEO) != 0 {
 			err = debug.ErrorNew(C.GoString(C.SDL_GetError()))
@@ -95,9 +101,6 @@ func (*platform) Update() {
 	}
 
 	Platform.input.update(cEvent)
-}
-
-func (*platform) Shutdown() {
 }
 
 func (*platform) Destroy() {

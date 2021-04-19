@@ -19,7 +19,6 @@ package goarrg
 type Renderer interface {
 	Draw() float64
 	Resize(int, int)
-	Shutdown()
 	Destroy()
 }
 

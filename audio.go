@@ -35,7 +35,6 @@ type Audio interface {
 	Init(AudioConfig) error
 	Mix() (int, audio.Track)
 	Update()
-	Shutdown()
 	Destroy()
 }
 
@@ -45,5 +44,4 @@ func (audioNull) AudioConfig() AudioConfig { return AudioConfig{} }
 func (audioNull) Init(AudioConfig) error   { return nil }
 func (audioNull) Mix() (int, audio.Track)  { return 0, nil }
 func (audioNull) Update()                  {}
-func (audioNull) Shutdown()                {}
 func (audioNull) Destroy()                 {}

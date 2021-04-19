@@ -17,6 +17,8 @@ limitations under the License.
 package goarrg
 
 import (
+	"os"
+	"os/signal"
 	"sync/atomic"
 	"time"
 
@@ -29,7 +31,6 @@ type Platform interface {
 	AudioInit(Audio) error
 	DisplayInit(Renderer) error
 	Update()
-	Shutdown()
 	Destroy()
 }
 
@@ -50,6 +51,7 @@ type Config struct {
 const (
 	stateRunning = iota + 1
 	stateShutdown
+	stateShutdownConfirmed
 	stateTerminated
 )
 
@@ -115,12 +117,36 @@ func Run(cfg Config) error {
 
 	defer system.program.Destroy()
 
+	// setup signal handlers to force shutdown
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	defer close(c)
+	defer signal.Stop(c)
+
+	go func() {
+		if <-c == nil {
+			debug.LogV("Engine closed signal handler")
+			return
+		}
+
+		debug.LogV("Engine signaled to force shutdown")
+		atomic.StoreInt32(&system.state, stateShutdownConfirmed)
+
+		time.AfterFunc(time.Second, func() {
+			if atomic.LoadInt32(&system.state) != stateTerminated {
+				panic("deadlock")
+			}
+		})
+	}()
+
 	atomic.StoreInt32(&system.state, stateRunning)
 	debug.LogV("Engine Init took: %v", time.Since(start))
 
 	deltaTime := float64(0.0)
 
-	for Running() {
+loop:
+
+	for atomic.LoadInt32(&system.state) == stateRunning {
 		debug.Trace("Platform Update", system.platform.Update)
 
 		traceEnd := debug.TraceStart("Program Update")
@@ -134,29 +160,48 @@ func Run(cfg Config) error {
 		traceEnd()
 	}
 
-	return nil
-}
+	if atomic.LoadInt32(&system.state) == stateShutdownConfirmed {
+		return nil
+	}
 
-func Running() bool {
-	return atomic.LoadInt32(&system.state) == stateRunning
-}
-
-func Shutdown() {
-	debug.LogV("Engine signaled to shutdown")
 	t := time.AfterFunc(time.Second, func() {
 		if atomic.LoadInt32(&system.state) != stateTerminated {
 			panic("deadlock")
 		}
 	})
 
-	if system.program.Shutdown() {
-		system.audio.Shutdown()
-		system.renderer.Shutdown()
-		system.platform.Shutdown()
-		atomic.StoreInt32(&system.state, stateShutdown)
-		return
+	if !system.program.Shutdown() {
+		t.Stop()
+		atomic.StoreInt32(&system.state, stateRunning)
+		debug.LogV("Engine canceled shutdown")
+		goto loop
 	}
 
-	t.Stop()
-	debug.LogV("Engine canceled shutdown")
+	atomic.StoreInt32(&system.state, stateShutdownConfirmed)
+
+	return nil
+}
+
+/*
+	Running reports whether the engine is considered to still be running.
+	It will only return true when the main loop is running and before shutdown
+	confirmation from Program.Shutdown(). This is so that you can depend on
+	Running() to terminate your loops/threads.
+
+	SIGINT will bypass Program.Shutdown() and force a terminate. This is so we
+	have a easy way to terminate the engine in the event of deadlocks.
+*/
+func Running() bool {
+	s := atomic.LoadInt32(&system.state)
+	return s == stateRunning || s == stateShutdown
+}
+
+/*
+	Shutdown is a thread safe signal to the engine that it should shutdown.
+	The signal usually would come from the Platform or Program packages.
+*/
+func Shutdown() {
+	if atomic.CompareAndSwapInt32(&system.state, stateRunning, stateShutdown) {
+		debug.LogV("Engine signaled to shutdown")
+	}
 }
