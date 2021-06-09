@@ -1,4 +1,4 @@
-//+build !disable_vk
+//+build !disable_vk,amd64
 
 /*
 Copyright 2020 The goARRG Authors.
@@ -19,7 +19,7 @@ limitations under the License.
 package sdl
 
 /*
-	#cgo pkg-config:sdl2 vulkan
+	#cgo pkg-config: sdl2 vulkan
 
 	#include "vk.h"
 */
@@ -51,7 +51,6 @@ func (vk *vkInstance) Surface() uintptr {
 	return vk.surface
 }
 
-//nolint:dupl
 func vkResultStr(code C.VkResult) string {
 	switch code {
 	case C.VK_SUCCESS:

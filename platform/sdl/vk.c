@@ -1,4 +1,4 @@
-//+build !disable_vk
+//+build !disable_vk,amd64
 
 /*
 Copyright 2020 The goARRG Authors.

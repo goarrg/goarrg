@@ -16,4 +16,5 @@ limitations under the License.
 
 package main
 
-//go:generate windres --input=main.exe.rc --input-format=rc --output=main_windows.syso --output-format=coff
+//go:generate x86_64-w64-mingw32-windres --input=main.exe.rc --input-format=rc --output=main_windows_amd64.syso --output-format=coff
+//go:generate i686-w64-mingw32-windres --input=main.exe.rc --input-format=rc --output=main_windows_386.syso --output-format=coff
