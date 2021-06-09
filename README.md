@@ -15,47 +15,52 @@ It is not a goal however to make it easy to rip out a piece and replace it later
  - ECS
  - Editor
 
-## OS Specific Dependencies
+## Supported Platforms
+Currently goarrg only supports Ubuntu and Windows, 386 and amd64. Vulkan is only supported on amd64.
+However, there is nothing preventing you from creating a platform package to support other platforms.
 
+### Cross Compile
+There is cross compile support for the supported platforms, assuming you installed a C/C++ cross compiler with the correct file names. To cross compile to other platforms, or to use a non default toolchain, you need to set the `CC`/`CXX`/`AR` environmental variables. For Windows, you also need to set `RC`.
+
+#### Default Compiler Selection
+| Taraget Platform | Prefix |
+| -- | -- |
+| linux_386 | i686-linux-gnu |
+| linux_amd64 | x86_64-linux-gnu |
+| windows_386 | i686-w64-mingw32 |
+| windows_amd64 | x86_64-w64-mingw32 |
+
+`CC={{.Prefix}}-gcc`<br>
+`CXX={{.Prefix}}-g++`<br>
+`AR={{.Prefix}}-gcc-ar`<br>
+**Windows Only:**<br>
+`RC={{.Prefix}}-windres`
+
+## Dependencies
+
+goarrg requires go 1.16+
 | OS | Dependencies |
 | -- | -- |
-| Ubuntu | sudo apt-get install build-essential libglu1-mesa-dev mesa-common-dev libxext-dev |
+| Ubuntu | sudo apt-get install build-essential cmake libxext-dev libpulse-dev |
 | Windows | mingw-w64, cmake |
+
+### Graphics API Specific
+| OS | Folder Prefix | Dependencies |
+| -- | -- | -- |
+| Ubuntu | gl | sudo apt-get install libglu1-mesa-dev mesa-common-dev |
+| Ubuntu_amd64 | vk | Vulkan SDK |
+| Windows_amd64 | vk | Vulkan SDK |
 
 ## Install instructions
 
 Install Go manually to ensure you have the latest version.<br/>
 https://golang.org/doc/install
 
-If you want to use vulkan you need the vulkan SDK. Set the env var `VULKAN_SDK` if it is a manual install<br/>
-https://vulkan.lunarg.com/sdk/home
-
-If you want to use SDL audio you need the relevant dev library on linux<br/>
-This is usually pulseaudio `libpulse-dev` or alsa `libasound2-dev`
-
-<details>
-<summary>Manual Install</summary><br>
-NOTE: Path must be <code>$HOME/go/...</code> <br/>
-Replace <code>$HOME</code> with <code>%USERPROFILE%</code> on windows <br/><br/>
-
-<pre>
-go env -w GO111MODULE=off
-git clone &ltURL&gt $HOME/go/src/goarrg.com
-cd $HOME/go/src/goarrg.com
-go get -d ./...
-go run goarrg.com/cmd/goarrg build yourself -vv
-</pre>
-</details>
-
-<details>
-<summary>Modules Install</summary><br>
-NOTE: If you are switching from manual install, you need to run <code>go env -w GO111MODULE=on</code><br/><br/>
-
-<pre>
-mkdir projectfolder
+## Quick Start
+<pre><code>mkdir projectfolder
 cd projectfolder
 go mod init github.com/username/projectname
-go get goarrg.com
+echo -e "//+build tools\npackage main\nimport _ \"goarrg.com/cmd/goarrg\"" > tools.go
+go get -d goarrg.com/...
 go run goarrg.com/cmd/goarrg build yourself -vv
-</pre>
-</details>
+</code></pre>

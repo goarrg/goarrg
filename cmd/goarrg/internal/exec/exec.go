@@ -19,11 +19,10 @@ package exec
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
-	"runtime"
+	"strconv"
 	"strings"
 
-	"goarrg.com/cmd/goarrg/internal/base"
+	"goarrg.com/cmd/goarrg/internal/cmd"
 	"goarrg.com/debug"
 )
 
@@ -32,7 +31,7 @@ func Run(c string, args ...string) error {
 		cmd := c
 		for _, arg := range args {
 			if strings.Contains(arg, " ") {
-				cmd += " \"" + arg + "\""
+				cmd += " " + strconv.Quote(arg)
 			} else {
 				cmd += " " + arg
 			}
@@ -40,32 +39,15 @@ func Run(c string, args ...string) error {
 		debug.LogI("Running: %s", cmd)
 	}
 
-	cmd := exec.Command(c, args...)
+	ex := exec.Command(c, args...)
+	ex.Env = os.Environ()
+	ex.Stderr = os.Stderr
 
-	if runtime.GOOS == "windows" && c == "cmake" {
-		path := os.Getenv("PATH")
-		specialPath := ""
-
-		for _, p := range filepath.SplitList(path) {
-			if _, err := os.Stat(filepath.Join(p, "sh.exe")); os.IsNotExist(err) {
-				specialPath = specialPath + string(filepath.ListSeparator) + p
-			}
-		}
-
-		os.Setenv("PATH", specialPath[1:])
-		cmd.Env = os.Environ()
-		os.Setenv("PATH", path)
-	} else {
-		cmd.Env = os.Environ()
+	if cmd.VeryVerbose() {
+		ex.Stdout = os.Stdout
 	}
 
-	if base.IsVeryVerbose() {
-		cmd.Stdout = os.Stdout
-	}
-
-	cmd.Stderr = os.Stderr
-
-	return debug.ErrorWrap(cmd.Run(), "Failed to run command")
+	return debug.ErrorWrap(ex.Run(), "Failed to run command")
 }
 
 func RunOutput(c string, args ...string) ([]byte, error) {
@@ -73,7 +55,7 @@ func RunOutput(c string, args ...string) ([]byte, error) {
 		cmd := c
 		for _, arg := range args {
 			if strings.Contains(arg, " ") {
-				cmd += " \"" + arg + "\""
+				cmd += " " + strconv.Quote(arg)
 			} else {
 				cmd += " " + arg
 			}
@@ -81,11 +63,11 @@ func RunOutput(c string, args ...string) ([]byte, error) {
 		debug.LogI("Running: %s", cmd)
 	}
 
-	cmd := exec.Command(c, args...)
-	cmd.Env = os.Environ()
-	cmd.Stderr = os.Stderr
+	ex := exec.Command(c, args...)
+	ex.Env = os.Environ()
+	ex.Stderr = os.Stderr
 
-	out, err := cmd.Output()
+	out, err := ex.Output()
 	return out, debug.ErrorWrap(err, "Failed to run command")
 }
 
@@ -94,7 +76,7 @@ func RunExit(c string, args ...string) int {
 		cmd := c
 		for _, arg := range args {
 			if strings.Contains(arg, " ") {
-				cmd += " \"" + arg + "\""
+				cmd += " " + strconv.Quote(arg)
 			} else {
 				cmd += " " + arg
 			}
@@ -102,19 +84,23 @@ func RunExit(c string, args ...string) int {
 		debug.LogI("Running: %s", cmd)
 	}
 
-	cmd := exec.Command(c, args...)
-	cmd.Env = os.Environ()
-	cmd.Stderr = os.Stderr
+	ex := exec.Command(c, args...)
+	ex.Env = os.Environ()
+	ex.Stderr = os.Stderr
 
-	if base.IsVeryVerbose() {
-		cmd.Stdout = os.Stdout
+	if cmd.VeryVerbose() {
+		ex.Stdout = os.Stdout
 	}
 
-	err := cmd.Run()
+	err := ex.Run()
 
 	if err == nil {
 		return 0
 	}
 
 	return err.(*exec.ExitError).ExitCode()
+}
+
+func LookPath(file string) (string, error) {
+	return exec.LookPath(file)
 }

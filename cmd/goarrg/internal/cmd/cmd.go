@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package base
+package cmd
 
 import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
+	"sort"
+	"strings"
 
 	"goarrg.com/debug"
 )
@@ -28,9 +29,10 @@ import (
 type CMD struct {
 	Run   func([]string) bool
 	Name  string
+	Usage string
 	Short string
 	Long  string
-	Flag  flag.FlagSet
+	Flags flag.FlagSet
 	CMDs  map[string]*CMD
 }
 
@@ -38,32 +40,40 @@ func (cmd *CMD) usage() {
 	args := ""
 	cmds := ""
 
-	cmd.Flag.VisitAll(func(f *flag.Flag) {
+	cmd.Flags.VisitAll(func(f *flag.Flag) {
 		n, u := flag.UnquoteUsage(f)
-		args += fmt.Sprintf("\t-" + f.Name + " " + n + "\n\t\t" + u + "\n")
+		args += "\t-" + f.Name + " " + n + "\n\t\t" + strings.ReplaceAll(strings.TrimSpace(u), "\n", "\n\t\t") + "\n"
 	})
 
+	sortedCMDs := make([]string, 0, len(cmd.CMDs))
+
 	for _, child := range cmd.CMDs {
-		cmds += fmt.Sprintf("\t" + child.Name + "\n\t\t" + child.Short + "\n")
+		sortedCMDs = append(sortedCMDs, child.Name)
 	}
 
-	fmt.Fprintf(os.Stderr, "Usage:\n\t"+filepath.Base(os.Args[0])+" "+cmd.Name)
+	sort.Strings(sortedCMDs)
+
+	for _, child := range sortedCMDs {
+		cmds += "\t" + cmd.CMDs[child].Name + "\n\t\t" + strings.ReplaceAll(strings.TrimSpace(cmd.CMDs[child].Short), "\n", "\n\t\t") + "\n"
+	}
+
+	fmt.Fprintf(os.Stderr, "Usage:\n\t%s %s", "go run goarrg.com/cmd/goarrg", cmd.Name)
 
 	switch {
 	case cmds != "" && args != "":
-		fmt.Fprintf(os.Stderr, " [command] [arguments]\n\nCommands:\n"+cmds+"\nArguments:\n"+args)
+		fmt.Fprintf(os.Stderr, " [command] [arguments] %s\n\nCommands:\n%s\nArguments:\n%s", cmd.Usage, cmds, args)
 	case cmds != "":
-		fmt.Fprintf(os.Stderr, " [command]\n\nCommands:\n"+cmds)
+		fmt.Fprintf(os.Stderr, " [command] %s\n\nCommands:\n%s", cmd.Usage, cmds)
 	case args != "":
-		fmt.Fprintf(os.Stderr, " [arguments]\n\nArguments:\n"+args)
+		fmt.Fprintf(os.Stderr, " [arguments] %s\n\nArguments:\n%s", cmd.Usage, args)
 	default:
-		fmt.Fprintf(os.Stderr, "\n")
+		fmt.Fprintf(os.Stderr, "%s\n", cmd.Usage)
 	}
 
 	if cmd.Long != "" {
-		fmt.Fprintf(os.Stderr, "\nDescription:\n\t%s\n", cmd.Long)
+		fmt.Fprintf(os.Stderr, "\nDescription:\n\t%s\n", strings.TrimSpace(cmd.Long))
 	} else if cmd.Short != "" {
-		fmt.Fprintf(os.Stderr, "\nDescription:\n\t%s\n", cmd.Short)
+		fmt.Fprintf(os.Stderr, "\nDescription:\n\t%s\n", strings.TrimSpace(cmd.Short))
 	}
 }
 
@@ -84,11 +94,11 @@ func (cmd *CMD) traverse(args []string) (*CMD, []string) {
 
 func (cmd *CMD) Exec(args []string) {
 	cmd, args = cmd.traverse(args)
-	cmd.Flag.Usage = cmd.usage
-	cmd.Flag.Init("", flag.ExitOnError)
-	cmd.Flag.BoolVar(&flagVerbose, "v", false, "Verbose - Print high level tasks")
-	cmd.Flag.BoolVar(&flagVeryVerbose, "vv", false, "Very Verbose - Print everything")
-	_ = cmd.Flag.Parse(args)
+	cmd.Flags.Usage = cmd.usage
+	cmd.Flags.Init("", flag.ExitOnError)
+	cmd.Flags.BoolVar(&flagVerbose, "v", false, "Verbose - Print high level tasks")
+	cmd.Flags.BoolVar(&flagVeryVerbose, "vv", false, "Very Verbose - Print everything")
+	_ = cmd.Flags.Parse(args)
 
 	switch {
 	case flagVeryVerbose:
@@ -96,10 +106,10 @@ func (cmd *CMD) Exec(args []string) {
 	case flagVerbose:
 		debug.LogSetLevel(debug.LogLevelInfo)
 	default:
-		debug.LogSetLevel(debug.LogLevelError)
+		debug.LogSetLevel(debug.LogLevelWarn)
 	}
 
-	if !cmd.Run(cmd.Flag.Args()) {
+	if !cmd.Run(cmd.Flags.Args()) {
 		cmd.usage()
 		os.Exit(2)
 	}

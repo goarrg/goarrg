@@ -14,26 +14,43 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package dep
+package build
 
-import "flag"
+import (
+	"flag"
+	"os"
 
-var flagDep bool
-var flagNoDep bool
-var flagDisableVK bool
-var flagDisableGL bool
+	"goarrg.com/cmd/goarrg/internal/cgodep"
+	"goarrg.com/cmd/goarrg/internal/toolchain"
+	"goarrg.com/debug"
+)
 
-func SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&flagDep, "dep", false, "Builds C dependencies")
-	f.BoolVar(&flagNoDep, "nodep", false, "Do not build C dependencies")
+var (
+	flagDisableVK bool
+	flagDisableGL bool
+)
+
+func AddFlags(f *flag.FlagSet) {
 	f.BoolVar(&flagDisableVK, "disable_vk", false, "Disables all Vulkan related functionality")
 	f.BoolVar(&flagDisableGL, "disable_gl", false, "Disables all OpenGL related functionality")
 }
 
-func FlagDisableVK() bool {
+func DisableVK() bool {
+	if !cgodep.HaveVK() {
+		debug.LogI("Vulkan SDK not found")
+		return true
+	}
 	return flagDisableVK
 }
 
-func FlagDisableGL() bool {
+func DisableGL() bool {
+	// only check for glu.h since there should be no way to install it without gl.h
+	// check here and not init as we need to know what the actual compiler is
+	// and we won't know that at init
+	_, err := toolchain.FindHeader(os.Getenv("CC"), "GL/glu.h")
+	if err != nil {
+		debug.LogI("Unable to find: %q", "GL/glu.h")
+		return true
+	}
 	return flagDisableGL
 }

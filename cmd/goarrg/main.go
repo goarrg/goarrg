@@ -20,19 +20,24 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
-	"goarrg.com/cmd/goarrg/internal/base"
+	"goarrg.com/cmd/goarrg/internal/cmd"
 	"goarrg.com/cmd/goarrg/internal/cmd/build"
 	"goarrg.com/cmd/goarrg/internal/cmd/clean"
+	"goarrg.com/cmd/goarrg/internal/cmd/install"
 	"goarrg.com/cmd/goarrg/internal/cmd/run"
 	"goarrg.com/cmd/goarrg/internal/cmd/test"
+	"goarrg.com/debug"
 )
 
-var cmds = map[string]*base.CMD{
-	clean.CMD.Name: clean.CMD,
-	build.CMD.Name: build.CMD,
-	run.CMD.Name:   run.CMD,
-	test.CMD.Name:  test.CMD,
+var cmds = map[string]*cmd.CMD{
+	build.CMD.Name:   build.CMD,
+	clean.CMD.Name:   clean.CMD,
+	install.CMD.Name: install.CMD,
+	run.CMD.Name:     run.CMD,
+	test.CMD.Name:    test.CMD,
 }
 
 func main() {
@@ -42,21 +47,29 @@ func main() {
 
 	if cmd, ok := cmds[os.Args[1]]; ok {
 		cmd.Exec(os.Args[2:])
-	} else {
-		if os.Args[1] != "-h" {
-			fmt.Fprintf(os.Stderr, "Invalid command: %s\n\n", os.Args[1])
-		}
+	} else if os.Args[1] == "-h" {
 		help()
+	} else {
+		debug.LogE("Invalid command %q", os.Args[1])
+		help()
+		os.Exit(2)
 	}
 }
 
 func help() {
 	fmt.Fprintf(os.Stderr, "Usage:\n\t"+filepath.Base(os.Args[0])+" [command] [arguments]\n\nCommands:\n")
 
+	sortedCMDs := make([]string, 0, len(cmds))
+
 	for _, cmd := range cmds {
-		fmt.Fprintf(os.Stderr, "\t%-8s\n\t\t%s\n", cmd.Name, cmd.Short)
+		sortedCMDs = append(sortedCMDs, cmd.Name)
+	}
+
+	sort.Strings(sortedCMDs)
+
+	for _, cmd := range sortedCMDs {
+		fmt.Fprintf(os.Stderr, "\t%s\n\t\t%s\n", cmds[cmd].Name, strings.ReplaceAll(strings.TrimSpace(cmds[cmd].Short), "\n", "\n\t\t"))
 	}
 
 	fmt.Fprintf(os.Stderr, "\nUse \""+filepath.Base(os.Args[0])+" [command] -h\" for more information about that command.\n")
-	os.Exit(2)
 }

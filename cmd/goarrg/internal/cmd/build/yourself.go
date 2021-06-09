@@ -17,63 +17,137 @@ limitations under the License.
 package build
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"runtime"
+	"path/filepath"
 	"strings"
+	"time"
 
-	"goarrg.com/cmd/goarrg/internal/base"
-	"goarrg.com/cmd/goarrg/internal/dep"
+	"goarrg.com/cmd/goarrg/internal/cgodep"
+	"goarrg.com/cmd/goarrg/internal/cmd"
 	"goarrg.com/cmd/goarrg/internal/exec"
+	"goarrg.com/cmd/goarrg/internal/toolchain"
 	"goarrg.com/debug"
+	"golang.org/x/tools/go/packages"
 )
 
-func yourself(args []string) bool {
-	if len(args) > 0 {
+const (
+	yourselfShort = `Installs all available C dependencies, does a clean build, and test goarrg.
+Tests are skipped while cross compiling.`
+	yourselfLong = yourselfShort + ``
+)
+
+type testEvent struct {
+	Time    time.Time // encodes as an RFC3339-format string
+	Action  string
+	Package string
+	Test    string
+	Elapsed float64 // seconds
+	Output  string
+}
+
+func parseTestFailures(data []byte) string {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	testOutputs := map[string]string{}
+	output := ""
+
+	for decoder.More() {
+		e := testEvent{}
+		err := decoder.Decode(&e)
+		if err != nil {
+			panic(err)
+		}
+
+		// ignore extra "FAIL\n" output
+		if e.Output == "FAIL\n" {
+			continue
+		}
+		if e.Action == "run" {
+			continue
+		}
+		if e.Action == "output" {
+			testOutputs[(e.Package + e.Test)] += e.Output
+		}
+		if e.Action == "fail" {
+			output += testOutputs[(e.Package + e.Test)]
+		}
+	}
+
+	if output == "" {
+		panic(fmt.Sprintf("No test failures found: %s", data))
+	}
+
+	return output
+}
+
+func init() {
+	CMD.CMDs["yourself"] = &cmd.CMD{
+		Run:   runYourself,
+		Name:  "yourself",
+		Short: yourselfShort,
+		Long:  yourselfLong,
+	}
+	AddFlags(&CMD.CMDs["yourself"].Flags)
+	toolchain.AddFlags(&CMD.CMDs["yourself"].Flags)
+}
+
+func runYourself(args []string) bool {
+	if len(args) != 0 {
+		debug.LogE("Invalid args: %q", args)
 		return false
 	}
 
-	gocache, err := ioutil.TempDir("", "goarrg")
+	toolchain.Setup()
 
+	// force goarrg to install SDL2 if not already
+	err := os.MkdirAll(filepath.Join(cmd.ModuleDataPath(), "cgodep", "sdl2", toolchain.TargetOS()+"_"+toolchain.TargetArch()), 0o755)
 	if err != nil {
 		panic(err)
 	}
 
-	if err := os.MkdirAll(gocache, 0o755); err != nil {
-		panic(err)
-	}
-
-	defer os.RemoveAll(gocache)
-	if err := os.Setenv("GOCACHE", gocache); err != nil {
-		panic(err)
-	}
-
-	dep.Build()
-	debug.LogI("Building goarrg")
-
 	tags := ""
 
-	if dep.FlagDisableVK() {
+	if DisableVK() {
+		debug.LogI("Vulkan disabled")
 		tags += ",disable_vk"
+	} else {
+		// force goarrg to install vulkan if not already
+		err := os.MkdirAll(filepath.Join(cmd.ModuleDataPath(), "cgodep", "vulkan"), 0o755)
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	if dep.FlagDisableGL() {
+	if DisableGL() {
+		debug.LogI("GL disabled")
 		tags += ",disable_gl"
 	}
 
+	cgodep.Check()
+
+	// if we are running "build yourself" then we are likely developing goarrg
+	// setting up a new environment or having issues.
+	// so do a clean build everytime to avoid cache issues
+	if err := exec.Run("go", "clean", "-cache"); err != nil {
+		panic(err)
+	}
+
+	debug.LogI("Building goarrg")
+
 	var pkgs []string
 
-	if out, err := exec.RunOutput("go", "list", "-f", "{{.ImportPath}}", "goarrg.com/..."); err != nil {
+	list, err := packages.Load(&packages.Config{Mode: packages.NeedName}, "goarrg.com/...")
+	if err != nil {
 		panic(err)
-	} else {
-		tmp := strings.Fields(string(out))
-		pkgs = tmp[:0]
+	}
 
-		for _, pkg := range tmp {
-			if !(strings.Contains(pkg, "/example") || strings.Contains(pkg, "/test")) {
-				pkgs = append(pkgs, pkg)
-			}
+	for _, pkg := range list {
+		// ignore examples and tests
+		// examples and tests "should" run later with "go test ..."
+		if !strings.Contains(pkg.PkgPath, "/example") && !strings.Contains(pkg.PkgPath, "/test") {
+			pkgs = append(pkgs, pkg.PkgPath)
 		}
 	}
 
@@ -85,19 +159,28 @@ func yourself(args []string) bool {
 		panic(err)
 	}
 
-	if runtime.GOOS == base.GOOS() {
+	if !toolchain.CrossCompiling() {
 		os.Setenv("GODEBUG", "cgocheck=2")
 
-		if out, err := exec.RunOutput("go", "test", "-tags="+tags, "-race", "-v", "-count=1", "goarrg.com/..."); err != nil {
-			panic(fmt.Sprintf("%v\n\n%s", err, out))
-		} else if base.IsVeryVerbose() {
-			fmt.Println(string(out))
-		}
+		if cmd.VeryVerbose() {
+			// we need to run with "-p=1" to get streaming test output, tho this disables parallel testing of packages
+			if err := exec.Run("go", "test", "-tags="+tags, "-v", "-count=1", "-p=1", "goarrg.com/..."); err != nil {
+				os.Exit(2)
+			}
 
-		if out, err := exec.RunOutput("go", "test", "-tags="+tags+",debug", "-race", "-v", "-count=1", "goarrg.com/..."); err != nil {
-			panic(fmt.Sprintf("%v\n\n%s", err, out))
-		} else if base.IsVeryVerbose() {
-			fmt.Println(string(out))
+			if err := exec.Run("go", "test", "-tags="+tags+",debug", "-v", "-count=1", "-p=1", "goarrg.com/..."); err != nil {
+				os.Exit(2)
+			}
+		} else {
+			if out, err := exec.RunOutput("go", "test", "-tags="+tags, "-count=1", "-json", "goarrg.com/..."); err != nil {
+				debug.LogE("Tests failed:\n%s", parseTestFailures(out))
+				os.Exit(2)
+			}
+
+			if out, err := exec.RunOutput("go", "test", "-tags="+tags+",debug", "-count=1", "-json", "goarrg.com/..."); err != nil {
+				debug.LogE("Tests failed:\n%s", parseTestFailures(out))
+				os.Exit(2)
+			}
 		}
 
 		os.Setenv("GODEBUG", "")

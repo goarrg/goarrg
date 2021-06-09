@@ -17,97 +17,43 @@ limitations under the License.
 package run
 
 import (
-	"flag"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"goarrg.com/cmd/goarrg/internal/base"
-	"goarrg.com/cmd/goarrg/internal/dep"
+	"goarrg.com/cmd/goarrg/internal/cmd"
+	"goarrg.com/cmd/goarrg/internal/cmd/build"
 	"goarrg.com/cmd/goarrg/internal/exec"
 	"goarrg.com/debug"
 )
 
-var CMD = &base.CMD{
+const (
+	short = "Compile game and goarrg C dependencies if needed, then execute"
+	long  = short + `
+
+Wrapper for "go run goarrg.com/cmd/goarrg build [go args] -o {{.TmpDir}}/{{.TmpFile}}" followed by "{{.TmpDir}}/{{.TmpFile}} [game args]"
+`
+)
+
+var CMD = &cmd.CMD{
 	Run:   run,
 	Name:  "run",
-	Short: "Compile game and goarrg C dependencies if needed, then execute",
-	Long:  "",
-	CMDs:  map[string]*base.CMD{},
+	Usage: "-- [go args] -- [game args]",
+	Short: short,
+	Long:  long,
+	CMDs:  map[string]*cmd.CMD{},
 }
 
 func init() {
-	setFlags := func(f *flag.FlagSet) {
-		dep.SetFlags(f)
-	}
-
-	setFlags(&CMD.Flag)
-
-	for _, cmd := range CMD.CMDs {
-		setFlags(&cmd.Flag)
-	}
-}
-
-func appendTag(args []string, tag string) []string {
-	haveTagsArg := false
-	for i, arg := range args {
-		if strings.HasPrefix(arg, "-tags") {
-			arg = strings.TrimPrefix(arg, "-tags")
-
-			if strings.HasPrefix(arg, "=") {
-				arg = strings.TrimPrefix(arg, "=")
-				args[i] = "-tags=" + strings.ReplaceAll(arg, " ", ",") + "," + tag
-			} else {
-				arg = args[i+1]
-				args[i+1] = strings.ReplaceAll(arg, " ", ",") + "," + tag
-			}
-			haveTagsArg = true
-			break
-		}
-	}
-
-	if !haveTagsArg {
-		args = append(args, "-tags="+tag)
-	}
-
-	return args
+	build.AddFlags(&CMD.Flags)
 }
 
 func run(args []string) bool {
-	{
-		out, err := exec.RunOutput("go", "list", "-f", "{{.Name}}", ".")
-
-		if err != nil {
-			panic(err)
-		}
-
-		if strings.TrimSpace(string(out)) != "main" {
-			debug.LogE("Current directory is not a package main")
-			os.Exit(2)
-		}
+	if !cmd.PackageMain() {
+		debug.LogE("Current directory is not a package main")
+		os.Exit(2)
 	}
 
-	{
-		gocache, err := filepath.Abs(filepath.Join(".", ".goarrg", "gocache"))
-
-		if err != nil {
-			panic(err)
-		}
-
-		if err := os.MkdirAll(gocache, 0o755); err != nil {
-			panic(err)
-		}
-
-		if err := os.Setenv("GOCACHE", gocache); err != nil {
-			panic(err)
-		}
-	}
-
-	dep.Build()
-	debug.LogI("Building project")
-
-	execArgs := args
+	var execArgs []string
 
 	for i, arg := range args {
 		if arg == "--" {
@@ -117,18 +63,7 @@ func run(args []string) bool {
 		}
 	}
 
-	args = append([]string{"build"}, args...)
-
-	if dep.FlagDisableVK() {
-		args = appendTag(args, "disable_vk")
-	}
-
-	if dep.FlagDisableGL() {
-		args = appendTag(args, "disable_gl")
-	}
-
-	buildDir, err := ioutil.TempDir("", "goarrg")
-
+	buildDir, err := os.MkdirTemp("", "goarrg")
 	if err != nil {
 		panic(err)
 	}
@@ -136,16 +71,11 @@ func run(args []string) bool {
 	defer os.RemoveAll(buildDir)
 	args = append(args, "-o", filepath.Join(buildDir, "goarrg.test"))
 
-	if err := exec.Run("go", args...); err != nil {
-		panic(err)
+	if !build.Run(args) {
+		return false
 	}
 
-	debug.LogI("Done building project")
-	debug.LogI("Running project")
-
-	ret := exec.RunExit(filepath.Join(buildDir, "goarrg.test"), execArgs...)
-
-	if ret != 0 {
+	if ret := exec.RunExit(filepath.Join(buildDir, "goarrg.test"), execArgs...); ret != 0 {
 		os.Exit(ret)
 	}
 

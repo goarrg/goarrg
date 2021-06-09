@@ -14,21 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package archive
+package cgodep
 
 import (
 	"archive/tar"
 	"compress/gzip"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"goarrg.com/debug"
 )
 
-func extractTARGZHere(r io.Reader) error {
-	gzr, err := gzip.NewReader(r)
+func writeFile(from io.Reader, to string, mode os.FileMode) error {
+	f, err := os.OpenFile(to, os.O_CREATE|os.O_RDWR, mode)
+	if err != nil {
+		return debug.ErrorWrap(err, "Open file failed")
+	}
 
+	defer f.Close()
+	_, err = io.Copy(f, from)
+	return debug.ErrorWrap(err, "Copy failed")
+}
+
+func extractTARGZ(r io.Reader, dir string) error {
+	gzr, err := gzip.NewReader(r)
 	if err != nil {
 		return debug.ErrorWrap(err, "Unknown Error")
 	}
@@ -55,18 +66,13 @@ func extractTARGZHere(r io.Reader) error {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0o755); err != nil {
+			if err := os.MkdirAll(filepath.Join(dir, target), 0o755); err != nil {
 				return debug.ErrorWrap(err, "Mkdir failed")
 			}
 
 		case tar.TypeReg:
-			if err := copyFile(tr, target, os.FileMode(header.Mode)); err != nil {
-				return debug.ErrorWrap(err, "copyFile failed")
-			}
-
-		case tar.TypeSymlink:
-			if err := os.Symlink(header.Linkname, target); err != nil {
-				return debug.ErrorWrap(err, "Symlink failed")
+			if err := writeFile(tr, filepath.Join(dir, target), os.FileMode(header.Mode)); err != nil {
+				return debug.ErrorWrap(err, "writeFile failed")
 			}
 		}
 	}

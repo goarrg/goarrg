@@ -17,98 +17,49 @@ limitations under the License.
 package test
 
 import (
-	"flag"
-	"os"
-	"path/filepath"
-	"strings"
-
-	"goarrg.com/cmd/goarrg/internal/base"
-	"goarrg.com/cmd/goarrg/internal/dep"
+	"goarrg.com/cmd/goarrg/internal/cgodep"
+	"goarrg.com/cmd/goarrg/internal/cmd"
+	"goarrg.com/cmd/goarrg/internal/cmd/build"
 	"goarrg.com/cmd/goarrg/internal/exec"
+	"goarrg.com/cmd/goarrg/internal/toolchain"
 	"goarrg.com/debug"
 )
 
-var CMD = &base.CMD{
+const (
+	short = "Wrapper for \"go test [go args]\"."
+	long  = short + ``
+)
+
+var CMD = &cmd.CMD{
 	Run:   run,
 	Name:  "test",
-	Short: "Tests project in current directory",
-	Long:  "",
-	CMDs:  map[string]*base.CMD{},
+	Usage: "-- [go args]",
+	Short: short,
+	Long:  long,
+	CMDs:  map[string]*cmd.CMD{},
 }
 
 func init() {
-	setFlags := func(f *flag.FlagSet) {
-		dep.SetFlags(f)
-	}
-
-	setFlags(&CMD.Flag)
-
-	for _, cmd := range CMD.CMDs {
-		setFlags(&cmd.Flag)
-	}
-}
-
-func appendTag(args []string, tag string) []string {
-	haveTagsArg := false
-	for i, arg := range args {
-		if strings.HasPrefix(arg, "-tags") {
-			arg = strings.TrimPrefix(arg, "-tags")
-
-			if strings.HasPrefix(arg, "=") {
-				arg = strings.TrimPrefix(arg, "=")
-				args[i] = "-tags=" + strings.ReplaceAll(arg, " ", ",") + "," + tag
-			} else {
-				arg = args[i+1]
-				args[i+1] = strings.ReplaceAll(arg, " ", ",") + "," + tag
-			}
-			haveTagsArg = true
-			break
-		}
-	}
-
-	if !haveTagsArg {
-		args = append(args, "-tags="+tag)
-	}
-
-	return args
+	build.AddFlags(&CMD.Flags)
 }
 
 func run(args []string) bool {
-	{
-		gocache, err := filepath.Abs(filepath.Join(".", ".goarrg", "gocache"))
+	toolchain.Setup()
+	cgodep.Check()
 
-		if err != nil {
-			panic(err)
-		}
+	args = append([]string{"test", "-v", "-count=1"}, args...)
 
-		if err := os.MkdirAll(gocache, 0o755); err != nil {
-			panic(err)
-		}
-
-		if err := os.Setenv("GOCACHE", gocache); err != nil {
-			panic(err)
-		}
+	if build.DisableVK() {
+		debug.LogI("Vulkan disabled")
+		args = toolchain.AppendTag(args, "disable_vk")
 	}
 
-	dep.Build()
+	if build.DisableGL() {
+		debug.LogI("GL disabled")
+		args = toolchain.AppendTag(args, "disable_gl")
+	}
+
 	debug.LogI("Testing project")
-
-	for i, arg := range args {
-		if arg == "--" {
-			args = args[:i]
-			break
-		}
-	}
-
-	args = append([]string{"test", ".", "-race", "-v"}, args...)
-
-	if dep.FlagDisableVK() {
-		args = appendTag(args, "disable_vk")
-	}
-
-	if dep.FlagDisableGL() {
-		args = appendTag(args, "disable_gl")
-	}
 
 	if err := exec.Run("go", args...); err != nil {
 		panic(err)

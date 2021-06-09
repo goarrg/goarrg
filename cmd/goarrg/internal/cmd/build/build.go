@@ -17,111 +17,56 @@ limitations under the License.
 package build
 
 import (
-	"flag"
 	"os"
-	"path/filepath"
-	"strings"
 
-	"goarrg.com/cmd/goarrg/internal/base"
-	"goarrg.com/cmd/goarrg/internal/dep"
+	"goarrg.com/cmd/goarrg/internal/cgodep"
+	"goarrg.com/cmd/goarrg/internal/cmd"
 	"goarrg.com/cmd/goarrg/internal/exec"
+	"goarrg.com/cmd/goarrg/internal/toolchain"
 	"goarrg.com/debug"
 )
 
-var CMD = &base.CMD{
-	Run:   build,
+const (
+	buildShort = `Compile game and goarrg C dependencies if needed.\nWrapper for "go build [go args]".`
+	buildLong  = buildShort + ``
+)
+
+var CMD = &cmd.CMD{
+	Run:   Run,
 	Name:  "build",
-	Short: "Compile game and goarrg C dependencies if needed",
-	Long:  "Compile game and goarrg C dependencies if needed\nIf no command is provided, the project in the current working directory will be built",
-	CMDs: map[string]*base.CMD{
-		"yourself": {
-			Run:   yourself,
-			Name:  "yourself",
-			Short: "Compile and test goarrg",
-			Long:  "",
-		},
-	},
+	Usage: "-- [go args]",
+	Short: buildShort,
+	Long:  buildLong,
+	CMDs:  map[string]*cmd.CMD{},
 }
 
 func init() {
-	setFlags := func(f *flag.FlagSet) {
-		dep.SetFlags(f)
-	}
-
-	setFlags(&CMD.Flag)
-
-	for _, cmd := range CMD.CMDs {
-		setFlags(&cmd.Flag)
-	}
+	AddFlags(&CMD.Flags)
+	toolchain.AddFlags(&CMD.Flags)
 }
 
-func appendTag(args []string, tag string) []string {
-	haveTagsArg := false
-	for i, arg := range args {
-		if strings.HasPrefix(arg, "-tags") {
-			arg = strings.TrimPrefix(arg, "-tags")
-
-			if strings.HasPrefix(arg, "=") {
-				arg = strings.TrimPrefix(arg, "=")
-				args[i] = "-tags=" + strings.ReplaceAll(arg, " ", ",") + "," + tag
-			} else {
-				arg = args[i+1]
-				args[i+1] = strings.ReplaceAll(arg, " ", ",") + "," + tag
-			}
-			haveTagsArg = true
-			break
-		}
+func Run(args []string) bool {
+	if !cmd.PackageMain() {
+		debug.LogE("Current directory is not a package main")
+		os.Exit(2)
 	}
 
-	if !haveTagsArg {
-		args = append(args, "-tags="+tag)
-	}
-
-	return args
-}
-
-func build(args []string) bool {
-	{
-		out, err := exec.RunOutput("go", "list", "-f", "{{.Name}}", ".")
-
-		if err != nil {
-			panic(err)
-		}
-
-		if strings.TrimSpace(string(out)) != "main" {
-			debug.LogE("Current directory is not a package main")
-			os.Exit(2)
-		}
-	}
-
-	{
-		gocache, err := filepath.Abs(filepath.Join(".", ".goarrg", "gocache"))
-
-		if err != nil {
-			panic(err)
-		}
-
-		if err := os.MkdirAll(gocache, 0o755); err != nil {
-			panic(err)
-		}
-
-		if err := os.Setenv("GOCACHE", gocache); err != nil {
-			panic(err)
-		}
-	}
-
-	dep.Build()
-	debug.LogI("Building project")
+	toolchain.Setup()
+	cgodep.Check()
 
 	args = append([]string{"build"}, args...)
 
-	if dep.FlagDisableVK() {
-		args = appendTag(args, "disable_vk")
+	if DisableVK() {
+		debug.LogI("Vulkan disabled")
+		args = toolchain.AppendTag(args, "disable_vk")
 	}
 
-	if dep.FlagDisableGL() {
-		args = appendTag(args, "disable_gl")
+	if DisableGL() {
+		debug.LogI("GL disabled")
+		args = toolchain.AppendTag(args, "disable_gl")
 	}
+
+	debug.LogI("Building project")
 
 	if err := exec.Run("go", args...); err != nil {
 		panic(err)

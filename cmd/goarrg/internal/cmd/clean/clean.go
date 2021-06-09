@@ -17,60 +17,49 @@ limitations under the License.
 package clean
 
 import (
-	"os"
-	"path/filepath"
-
-	"goarrg.com/cmd/goarrg/internal/base"
+	"goarrg.com/cmd/goarrg/internal/cgodep"
+	"goarrg.com/cmd/goarrg/internal/cmd"
 	"goarrg.com/cmd/goarrg/internal/exec"
+	"goarrg.com/cmd/goarrg/internal/toolchain"
 )
 
-var CMD = &base.CMD{
-	Run: func(args []string) bool {
-		if len(args) > 0 {
-			return false
-		}
+const (
+	short = `Wrapper for "go clean [go args]".`
+	long  = short + ``
+)
 
-		{
-			gocache, err := filepath.Abs(filepath.Join(".", ".goarrg", "gocache"))
-
-			if err != nil {
-				panic(err)
-			}
-
-			if err := os.MkdirAll(gocache, 0o755); err != nil {
-				panic(err)
-			}
-
-			if err := os.Setenv("GOCACHE", gocache); err != nil {
-				panic(err)
-			}
-		}
-
-		if err := exec.Run("go", "clean", "-cache", "-testcache", "./..."); err != nil {
-			panic(err)
-		}
-
-		return true
-	},
+var CMD = &cmd.CMD{
+	Run:   run,
 	Name:  "clean",
-	Short: "Clears build cache and current directory of genereated files",
-	Long:  "",
-	CMDs: map[string]*base.CMD{
-		"yourself": {
-			Run: func(args []string) bool {
-				if len(args) > 0 {
-					return false
-				}
+	Usage: "-- [go args]",
+	Short: short,
+	Long:  long,
+}
 
-				if err := exec.Run("go", "clean", "-cache", "-testcache", "goarrg.com/..."); err != nil {
-					panic(err)
-				}
+var (
+	flagCgoDep      bool
+	flagCgoDepCache bool
+)
 
-				return true
-			},
-			Name:  "yourself",
-			Short: "Clears build cache and goarrg sources of genereated files",
-			Long:  "",
-		},
-	},
+func init() {
+	CMD.Flags.BoolVar(&flagCgoDep, "cgodep", false, "Also remove all built C dependencies, they will be rebuilt as needed.")
+	CMD.Flags.BoolVar(&flagCgoDepCache, "cgodepcache", false, "Also remove the C dependencies downloaded files, they will be redownloaded as needed.")
+}
+
+func run(args []string) bool {
+	toolchain.Setup()
+
+	args = append([]string{"clean"}, args...)
+	if err := exec.Run("go", args...); err != nil {
+		panic(err)
+	}
+
+	if flagCgoDep {
+		cgodep.Clean()
+	}
+	if flagCgoDepCache {
+		cgodep.CleanCache()
+	}
+
+	return true
 }
