@@ -64,3 +64,6 @@ echo -e "//+build tools\npackage main\nimport _ \"goarrg.com/cmd/goarrg\"" > too
 go get -d goarrg.com/...
 go run goarrg.com/cmd/goarrg build yourself -vv
 </code></pre>
+
+## Examples
+Examples can be found at https://github.com/goarrg/examples
