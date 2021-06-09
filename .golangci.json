@@ -4,24 +4,29 @@
             "depguard",
             "dupl",
             "exportloopref",
-            "gofmt",
+            "gofumpt",
             "goimports",
-            "golint",
             "govet",
+            "misspell",
             "unconvert",
+            "wastedassign",
             "whitespace"
         ]
     },
     "linters-settings": {
-        "gofmt": {
-            "simplify": true
-        },
         "govet": {
             "enable-all": true,
             "disable": [
                 "composites",
                 "fieldalignment",
                 "shadow"
+            ]
+        },
+        "misspell": {
+            "locale": "US",
+            "ignore-words": [
+                "goarrg",
+                "vulkan"
             ]
         },
         "depguard": {
@@ -37,7 +42,8 @@
         "exclude": [
             ".*string `windows` has \\d+ occurrences, make it a constant",
             ".*string `linux` has \\d+ occurrences, make it a constant",
-            ".*string `darwin` has \\d+ occurrences, make it a constant"
+            ".*string `darwin` has \\d+ occurrences, make it a constant",
+            ".*unsafeptr: possible misuse of reflect.SliceHeader"
         ]
     }
 }

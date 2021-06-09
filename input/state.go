@@ -27,14 +27,14 @@ type StateDelta interface {
 }
 
 /*
-	Value represents a linear action such as a button or analogue trigger.
+	Value represents a linear action such as a button or analog trigger.
 	For buttons this is either a 0 or a 1 or a delta of -1.
-	For analogue actions this would be between 0.0 and 1.0 inclusive.
+	For analog actions this would be between 0.0 and 1.0 inclusive.
 */
 type Value float32
 
 /*
-	Axis represents a 3D vector action such as mouse or analogue stick movement.
+	Axis represents a 3D vector action such as mouse or analog stick movement.
 */
 type Axis struct {
 	gmath.Vector3f64
@@ -48,21 +48,16 @@ type Coords struct {
 }
 
 func (v Value) isInputState() {
-
 }
 
 func (v Value) isInputStateDelta() {
-
 }
 
 func (a Axis) isInputState() {
-
 }
 
 func (a Axis) isInputStateDelta() {
-
 }
 
 func (a Coords) isInputState() {
-
 }

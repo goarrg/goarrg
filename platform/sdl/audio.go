@@ -136,7 +136,7 @@ func verifyChannelList(list []audio.Channel) ([]audio.Channel, error) {
 	m := audioChannelMask(0)
 
 	for _, c := range list {
-		m = m | audioChannelMask(1<<c)
+		m |= audioChannelMask(1 << c)
 	}
 
 	switch m {
@@ -216,12 +216,11 @@ func decodeWAV(a asset.Asset) (audio.Spec, int, []float32, error) {
 	defer C.SDL_FreeWAV(cBuf)
 
 	channels, err := channelCountToList(int(cSpec.channels))
-
 	if err != nil {
 		return audio.Spec{}, 0, nil, debug.ErrorWrap(err, "Failed to decode WAV")
 	}
 
-	var cCVT = C.SDL_AudioCVT{}
+	cCVT := C.SDL_AudioCVT{}
 
 	//nolint:staticcheck
 	if C.SDL_BuildAudioCVT(&cCVT, cSpec.format, cSpec.channels, cSpec.freq, C.AUDIO_F32SYS, cSpec.channels, cSpec.freq) < 0 {
@@ -297,7 +296,6 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 	}
 
 	channels, err := verifyChannelList(cfg.Spec.Channels)
-
 	if err != nil {
 		return debug.ErrorWrap(err, "Failed to init SDL audio")
 	}

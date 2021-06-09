@@ -74,7 +74,9 @@ func Test_debug(t *testing.T) {
 
 	r := regexp.MustCompile(output)
 
-	if !r.MatchString(buf.String()) {
+	if r.MatchString(buf.String()) {
+		t.Log(buf.String())
+	} else {
 		t.Fatalf("Expected:\n-----\n%s\n-----\nGot:\n-----\n%s-----", output, buf.String())
 	}
 }

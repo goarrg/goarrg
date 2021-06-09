@@ -28,8 +28,7 @@ import (
 	"goarrg.com/debug"
 )
 
-type glInstance struct {
-}
+type glInstance struct{}
 
 func (gl *glInstance) ProcAddr() uintptr {
 	return uintptr(C.SDL_GL_GetProcAddress)
@@ -76,7 +75,6 @@ func glInit(r goarrg.GLRenderer) error {
 	C.SDL_GL_SetAttribute(C.SDL_GL_DOUBLEBUFFER, 1)
 
 	err := createWindow(C.SDL_WINDOW_OPENGL)
-
 	if err != nil {
 		return err
 	}

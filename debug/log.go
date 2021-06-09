@@ -31,8 +31,10 @@ const (
 	LogLevelError
 )
 
-var logOut = log.New(os.Stderr, "", log.Lmicroseconds).Output
-var logLevel uint32
+var (
+	logOut   = log.New(os.Stderr, "", log.Lmicroseconds).Output
+	logLevel uint32
+)
 
 func LogSetLevel(l uint32) {
 	if l <= LogLevelError {

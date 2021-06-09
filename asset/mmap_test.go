@@ -20,21 +20,19 @@ package asset
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
 func TestMMAP(t *testing.T) {
 	got, err := mapFile("mmap_test.go")
-
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	defer got.close()
 
-	want, err := ioutil.ReadFile("mmap_test.go")
-
+	want, err := os.ReadFile("mmap_test.go")
 	if err != nil {
 		t.Fatal(err)
 	}

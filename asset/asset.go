@@ -30,8 +30,7 @@ import (
 	"goarrg.com/debug"
 )
 
-type Config struct {
-}
+type Config struct{}
 
 type Asset interface {
 	Size() int
@@ -45,8 +44,10 @@ type asset struct {
 	refs *int64
 }
 
-var cache = make(map[string]asset)
-var mtx = sync.RWMutex{}
+var (
+	cache = make(map[string]asset)
+	mtx   = sync.RWMutex{}
+)
 
 func init() {
 	if !(strings.HasSuffix(os.Args[0], ".test") || strings.HasSuffix(os.Args[0], ".test.exe")) {
@@ -83,7 +84,6 @@ func Load(file string) (Asset, error) {
 
 	debug.LogV("Loading asset [%s] from disk", file)
 	f, err := mapFile(file)
-
 	if err != nil {
 		return nil, debug.ErrorWrap(err, "Failed to load asset %q", file)
 	}

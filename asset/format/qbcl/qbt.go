@@ -170,13 +170,11 @@ func loadMatrix(r *bufio.Reader, m map[string]voxel.Model) error {
 	data := bytes.NewBuffer(make([]byte, 0, int64(dataSZ)))
 
 	_, err := io.CopyN(data, r, int64(dataSZ))
-
 	if err != nil {
 		return debug.ErrorWrap(err, "Failed to load matrix")
 	}
 
 	zr, err := zlib.NewReader(data)
-
 	if err != nil {
 		return debug.ErrorWrap(err, "Failed to load matrix")
 	}
@@ -219,7 +217,6 @@ func loadModel(r *bufio.Reader, m map[string]voxel.Model) error {
 	var children uint32
 
 	err := binary.Read(r, binary.LittleEndian, &children)
-
 	if err != nil {
 		return debug.ErrorWrap(err, "Failed to load model")
 	}

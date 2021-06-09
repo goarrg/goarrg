@@ -40,8 +40,10 @@ type format struct {
 	decode func(asset.Asset) (map[string]Model, error)
 }
 
-var mtx = sync.Mutex{}
-var formats = atomic.Value{}
+var (
+	mtx     = sync.Mutex{}
+	formats = atomic.Value{}
+)
 
 func RegisterFormat(magic string, decode func(asset.Asset) (map[string]Model, error)) {
 	mtx.Lock()
@@ -52,7 +54,6 @@ func RegisterFormat(magic string, decode func(asset.Asset) (map[string]Model, er
 
 func Load(file string) (*Collection, error) {
 	a, err := asset.Load(file)
-
 	if err != nil {
 		return nil, debug.ErrorWrap(err, "Failed to load voxel collection")
 	}
@@ -67,7 +68,6 @@ formats:
 		}
 
 		magic, err := r.Peek(len(f.magic))
-
 		if err != nil {
 			return nil, debug.ErrorWrap(err, "Failed to load voxel collection")
 		}
@@ -79,7 +79,6 @@ formats:
 		}
 
 		models, err := f.decode(a)
-
 		if err != nil {
 			return nil, debug.ErrorWrap(err, "Failed to load voxel collection")
 		}

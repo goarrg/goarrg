@@ -38,7 +38,6 @@ type file struct {
 
 func mapFile(f string) (file, error) {
 	info, err := os.Stat(f)
-
 	if err != nil {
 		return file{}, debug.ErrorWrap(err, "Failed to map file")
 	}
@@ -81,7 +80,8 @@ func mapFile(f string) (file, error) {
 		return file{}, debug.ErrorWrap(err, "Failed to map file")
 	}
 
-	return file{f,
+	return file{
+		f,
 		int(info.Size()),
 		fh,
 		mh,

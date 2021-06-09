@@ -73,8 +73,10 @@ type format struct {
 	decode func(asset.Asset) (Spec, int, []float32, error)
 }
 
-var mtx = sync.Mutex{}
-var formats = atomic.Value{}
+var (
+	mtx     = sync.Mutex{}
+	formats = atomic.Value{}
+)
 
 func ChannelsMono() []Channel {
 	return []Channel{ChannelLeft}
@@ -101,7 +103,6 @@ func RegisterFormat(magic string, decode func(asset.Asset) (Spec, int, []float32
 
 func Load(file string) (Asset, error) {
 	a, err := asset.Load(file)
-
 	if err != nil {
 		return nil, debug.ErrorWrap(err, "Failed to load audio")
 	}
@@ -128,7 +129,6 @@ formats:
 		}
 
 		spec, samples, interleavedTrack, err := f.decode(a)
-
 		if err != nil {
 			return nil, err
 		}

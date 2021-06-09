@@ -16,7 +16,6 @@ limitations under the License.
 
 package sdl
 
-import "C"
 import (
 	"goarrg.com/debug"
 	"goarrg.com/gmath"

@@ -44,8 +44,10 @@ type platform struct {
 	input   inputSystem
 }
 
-var Platform = &platform{}
-var initOnce = sync.Once{}
+var (
+	Platform = &platform{}
+	initOnce = sync.Once{}
+)
 
 func init() {
 	runtime.LockOSThread()
