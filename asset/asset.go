@@ -19,10 +19,7 @@ package asset
 import (
 	"bytes"
 	"io"
-	"os"
-	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"unsafe"
@@ -48,16 +45,6 @@ var (
 	cache = make(map[string]asset)
 	mtx   = sync.RWMutex{}
 )
-
-func init() {
-	if !(strings.HasSuffix(os.Args[0], ".test") || strings.HasSuffix(os.Args[0], ".test.exe")) {
-		if ex, err := os.Executable(); err != nil {
-			panic(err)
-		} else if err := os.Chdir(filepath.Dir(ex)); err != nil {
-			panic(err)
-		}
-	}
-}
 
 func Load(file string) (Asset, error) {
 	mtx.RLock()
