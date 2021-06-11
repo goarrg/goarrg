@@ -39,7 +39,11 @@ The following list includes dependencies needed to build [Installable Dependenci
 goarrg comes with commands to install certain dependencies, to see a list of available dependencies run:
 <pre><code>go run goarrg.com/cmd/goarrg install -h</pre></code>
 
+Installed dependencies will be rebuilt as needed. e.g. when goarrg is updated and it needs a newer version of the dependency.
+
 If there is a `-target` flag available for the dependency, it will only be built for the selected target, by default the target is the current OS/Arch. You need to run the install command for every OS/Arch you wish to cross compile to.
+
+To avoid issues with multiple versions of goarrg, these dependencies are installed to a location within your project folder (the folder with a `go.mod` file).
 
 ## Cross Compile
 There is cross compile support for the supported platforms, assuming you installed a C/C++ cross compiler with the correct file names. To cross compile to other platforms, or to use a non default toolchain, you need to set the `CC`/`CXX`/`AR` environmental variables. For Windows, you also need to set `RC`.
