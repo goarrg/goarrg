@@ -16,7 +16,7 @@ It is not a goal however to make it easy to rip out a piece and replace it later
  - Editor
 
 ## Supported Platforms
-Currently goarrg only supports Ubuntu and Windows, 386 and amd64. Vulkan is only supported on amd64.
+Currently goarrg only supports Ubuntu (tested on 20.04 LTS) and Windows 10, 386 and amd64. Vulkan is only supported on amd64.
 However, there is nothing preventing you from creating a platform package to support other platforms.
 
 ## Dependencies
