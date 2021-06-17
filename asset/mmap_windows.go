@@ -39,21 +39,21 @@ type file struct {
 func mapFile(f string) (file, error) {
 	info, err := os.Stat(f)
 	if err != nil {
-		return file{}, debug.ErrorWrap(err, "Failed to map file")
+		return file{}, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
 	if info.Size() == 0 {
-		return file{}, debug.ErrorWrap(debug.ErrorNew("Empty file"), "Failed to map file")
+		return file{}, debug.ErrorWrapf(debug.Errorf("Empty file"), "Failed to map file")
 	}
 
 	if unsafe.Sizeof(int(0)) != unsafe.Sizeof(int64(0)) && info.Size() > math.MaxInt32 {
-		return file{}, debug.ErrorWrap(debug.ErrorNew("File too big"), "Failed to map file")
+		return file{}, debug.ErrorWrapf(debug.Errorf("File too big"), "Failed to map file")
 	}
 
 	fh, err := windows.CreateFile(windows.StringToUTF16Ptr(f), windows.GENERIC_READ, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE, nil, windows.OPEN_EXISTING, 0x08000000, 0)
 
 	if fh == windows.InvalidHandle {
-		return file{}, debug.ErrorWrap(err, "Failed to map file")
+		return file{}, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
 	mh, err := windows.CreateFileMapping(fh, nil, windows.PAGE_READONLY, 0, 0, nil)
@@ -63,7 +63,7 @@ func mapFile(f string) (file, error) {
 			panic(err)
 		}
 
-		return file{}, debug.ErrorWrap(err, "Failed to map file")
+		return file{}, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
 	addr, err := windows.MapViewOfFile(mh, windows.FILE_MAP_READ, 0, 0, 0)
@@ -77,7 +77,7 @@ func mapFile(f string) (file, error) {
 			panic(err)
 		}
 
-		return file{}, debug.ErrorWrap(err, "Failed to map file")
+		return file{}, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
 	return file{

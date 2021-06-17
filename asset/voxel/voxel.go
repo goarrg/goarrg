@@ -55,7 +55,7 @@ func RegisterFormat(magic string, decode func(asset.Asset) (map[string]Model, er
 func Load(file string) (*Collection, error) {
 	a, err := asset.Load(file)
 	if err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to load voxel collection")
+		return nil, debug.ErrorWrapf(err, "Failed to load voxel collection")
 	}
 
 	r := bufio.NewReader(a.Reader())
@@ -69,7 +69,7 @@ formats:
 
 		magic, err := r.Peek(len(f.magic))
 		if err != nil {
-			return nil, debug.ErrorWrap(err, "Failed to load voxel collection")
+			return nil, debug.ErrorWrapf(err, "Failed to load voxel collection")
 		}
 
 		for i, b := range f.magic {
@@ -80,7 +80,7 @@ formats:
 
 		models, err := f.decode(a)
 		if err != nil {
-			return nil, debug.ErrorWrap(err, "Failed to load voxel collection")
+			return nil, debug.ErrorWrapf(err, "Failed to load voxel collection")
 		}
 
 		return &Collection{
@@ -88,5 +88,5 @@ formats:
 		}, nil
 	}
 
-	return nil, debug.ErrorNew("Failed to load voxel collection, unknown format")
+	return nil, debug.Errorf("Failed to load voxel collection, unknown format")
 }

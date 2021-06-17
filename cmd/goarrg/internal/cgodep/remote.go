@@ -34,12 +34,12 @@ func get(url string, verify func([]byte) error) ([]byte, error) {
 	fileName := filepath.Join(cacheDir, filepath.Base(url))
 
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
-		panic(debug.ErrorWrap(err, "Failed to create download cache dir: %q", cacheDir))
+		panic(debug.ErrorWrapf(err, "Failed to create download cache dir: %q", cacheDir))
 	}
 
 	if data, err := os.ReadFile(fileName); err != nil {
 		if !os.IsNotExist(err) {
-			return nil, debug.ErrorWrap(err, "Failed to read cached file: %q", fileName)
+			return nil, debug.ErrorWrapf(err, "Failed to read cached file: %q", fileName)
 		}
 	} else {
 		debug.LogV("Verifying cached file: %q", fileName)
@@ -52,37 +52,37 @@ func get(url string, verify func([]byte) error) ([]byte, error) {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to get: %q", url)
+		return nil, debug.ErrorWrapf(err, "Failed to get: %q", url)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, debug.ErrorWrap(debug.ErrorNew("Bad status: %s", resp.Status), "Failed to get %s", url)
+		return nil, debug.ErrorWrapf(debug.Errorf("Bad status: %s", resp.Status), "Failed to get %s", url)
 	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to get: %q", url)
+		return nil, debug.ErrorWrapf(err, "Failed to get: %q", url)
 	}
 
 	debug.LogV("Verifying downloaded data")
 
 	if err := verify(data); err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to verify downloaded data")
+		return nil, debug.ErrorWrapf(err, "Failed to verify downloaded data")
 	}
 
 	debug.LogV("Writing to: %q", fileName)
 
 	if err := os.WriteFile(fileName, data, 0o644); err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to write file: %q", fileName)
+		return nil, debug.ErrorWrapf(err, "Failed to write file: %q", fileName)
 	}
 
 	return data, nil
 }
 
 func verifyError(err error) error {
-	return debug.ErrorWrap(err, "Verification failed")
+	return debug.ErrorWrapf(err, "Verification failed")
 }
 
 func verifyPGP(target, pk, sig []byte) error {
@@ -110,7 +110,7 @@ func verifySHA256(target []byte, targetSHA256 string) error {
 
 	sha256 := hex.EncodeToString(h.Sum(nil))
 	if sha256 != targetSHA256 {
-		return verifyError(debug.ErrorNew("SHA256 mismatch, Got: %q Want: %q", sha256, targetSHA256))
+		return verifyError(debug.Errorf("SHA256 mismatch, Got: %q Want: %q", sha256, targetSHA256))
 	}
 
 	return nil

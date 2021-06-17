@@ -89,7 +89,7 @@ func createWindow(flags C.uint32_t) error {
 			var cRect C.SDL_Rect
 
 			if C.SDL_GetDisplayBounds(0, &cRect) != 0 {
-				err := debug.ErrorNew(C.GoString(C.SDL_GetError()))
+				err := debug.Errorf(C.GoString(C.SDL_GetError()))
 				C.SDL_ClearError()
 				debug.LogE("SDL failed to create window: %s", err.Error())
 			}
@@ -119,7 +119,7 @@ func createWindow(flags C.uint32_t) error {
 	)
 
 	if cWindow == nil {
-		err := debug.ErrorNew(C.GoString(C.SDL_GetError()))
+		err := debug.Errorf(C.GoString(C.SDL_GetError()))
 		C.SDL_ClearError()
 		debug.LogE("SDL failed to create window: %s", err.Error())
 		return err

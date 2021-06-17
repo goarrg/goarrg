@@ -46,7 +46,7 @@ func (*platform) DisplayInit(renderer goarrg.Renderer) error {
 		return glInit(gl)
 	}
 
-	return debug.ErrorNew("Invalid renderer")
+	return debug.Errorf("Invalid renderer")
 }
 
 func (d *displaySystem) hasKeyboardFocus() bool {

@@ -50,7 +50,7 @@ func glInit(r goarrg.GLRenderer) error {
 	debug.LogV("SDL creating gl Window")
 
 	if r == nil {
-		err := debug.ErrorNew("Invalid renderer")
+		err := debug.Errorf("Invalid renderer")
 		debug.LogE("SDL failed to create window: Invalid renderer")
 		return err
 	}
@@ -91,7 +91,7 @@ func glInit(r goarrg.GLRenderer) error {
 		C.SDL_ClearError()
 		debug.LogI("vsync enabled")
 	default:
-		err := debug.ErrorWrap(debug.ErrorNew(C.GoString(C.SDL_GetError())), "Failed to enable vsync")
+		err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to enable vsync")
 		C.SDL_ClearError()
 		return err
 	}

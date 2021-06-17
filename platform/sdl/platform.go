@@ -54,7 +54,7 @@ func init() {
 }
 
 func (*platform) Init() error {
-	err := debug.ErrorNew("Init must be called only once")
+	err := debug.Errorf("Init must be called only once")
 
 	initOnce.Do(func() {
 		debug.LogV("Platform initializing")
@@ -70,7 +70,7 @@ func (*platform) Init() error {
 
 		C.SDL_SetMainReady()
 		if C.SDL_Init(C.SDL_INIT_VIDEO) != 0 {
-			err = debug.ErrorNew(C.GoString(C.SDL_GetError()))
+			err = debug.Errorf(C.GoString(C.SDL_GetError()))
 			C.SDL_ClearError()
 			Popup("Platform init failed: %s", err.Error())
 			return

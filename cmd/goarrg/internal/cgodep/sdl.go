@@ -121,12 +121,12 @@ func sdlInstall(installDir string) cgoFlags {
 		return verifySHA256(data, sdlSHA256)
 	})
 	if err != nil {
-		panic(debug.ErrorWrap(err, "Failed to download SDL2"))
+		panic(debug.ErrorWrapf(err, "Failed to download SDL2"))
 	}
 
 	srcDir, err := os.MkdirTemp("", "goarrg-sdl")
 	if err != nil {
-		panic(debug.ErrorWrap(err, "Failed to make temp dir: %q", srcDir))
+		panic(debug.ErrorWrapf(err, "Failed to make temp dir: %q", srcDir))
 	}
 
 	defer os.RemoveAll(srcDir)
@@ -134,12 +134,12 @@ func sdlInstall(installDir string) cgoFlags {
 	debug.LogV("Extracting SDL2")
 
 	if err := extractTARGZ(bytes.NewReader(data), srcDir); err != nil {
-		panic(debug.ErrorWrap(err, "Failed to extract SDL2"))
+		panic(debug.ErrorWrapf(err, "Failed to extract SDL2"))
 	}
 
 	buildDir, err := os.MkdirTemp("", "goarrg-sdl-build")
 	if err != nil {
-		panic(debug.ErrorWrap(err, "Failed to make temp dir: %q", buildDir))
+		panic(debug.ErrorWrapf(err, "Failed to make temp dir: %q", buildDir))
 	}
 
 	defer os.RemoveAll(buildDir)

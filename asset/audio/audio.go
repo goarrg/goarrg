@@ -104,7 +104,7 @@ func RegisterFormat(magic string, decode func(asset.Asset) (Spec, int, []float32
 func Load(file string) (Asset, error) {
 	a, err := asset.Load(file)
 	if err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to load audio")
+		return nil, debug.ErrorWrapf(err, "Failed to load audio")
 	}
 
 	r := bufio.NewReader(a.Reader())
@@ -119,7 +119,7 @@ formats:
 		magic, err := r.Peek(len(f.magic))
 
 		if err != nil && err != io.EOF {
-			return nil, debug.ErrorWrap(err, "Failed to load audio")
+			return nil, debug.ErrorWrapf(err, "Failed to load audio")
 		}
 
 		for i, b := range f.magic {
@@ -148,7 +148,7 @@ formats:
 		}, nil
 	}
 
-	return nil, debug.ErrorNew("Failed to load audio, unknown format")
+	return nil, debug.Errorf("Failed to load audio, unknown format")
 }
 
 func (s *assetImpl) Track() Track {

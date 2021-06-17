@@ -63,13 +63,13 @@ func init() {
 		if vkHeaders == "" {
 			switch {
 			case errGCC != nil && errClang != nil:
-				vkErr = debug.ErrorNew("Failed to find \"vulkan/vulkan.h\" with gcc and clang:\n%s\n%s", errGCC.Error(), errClang.Error())
+				vkErr = debug.Errorf("Failed to find \"vulkan/vulkan.h\" with gcc and clang:\n%s\n%s", errGCC.Error(), errClang.Error())
 			case errGCC != nil:
 				vkErr = errGCC
 			case errClang != nil:
 				vkErr = errClang
 			default:
-				vkErr = debug.ErrorNew("Unable to find gcc or clang")
+				vkErr = debug.Errorf("Unable to find gcc or clang")
 			}
 		}
 	}
@@ -126,9 +126,9 @@ func vulkanInstall(installDir string) cgoFlags {
 			}
 			dir = filepath.Join(vkSDK, "include")
 			if stat, err := os.Stat(dir); err != nil {
-				panic(debug.ErrorWrap(err, "Failed to find include directory: %q", dir))
+				panic(debug.ErrorWrapf(err, "Failed to find include directory: %q", dir))
 			} else if !stat.IsDir() {
-				panic(debug.ErrorNew("Expected %q to be a directory", dir))
+				panic(debug.Errorf("Expected %q to be a directory", dir))
 			}
 
 			return cgoFlags{
@@ -139,7 +139,7 @@ func vulkanInstall(installDir string) cgoFlags {
 		}
 
 		if !stat.IsDir() {
-			panic(debug.ErrorNew("Expected %q to be a directory", dir))
+			panic(debug.Errorf("Expected %q to be a directory", dir))
 		}
 
 		return cgoFlags{

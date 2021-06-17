@@ -128,7 +128,7 @@ func channelCountToList(n int) ([]audio.Channel, error) {
 			audio.ChannelSurroundRight,
 		}, nil
 	default:
-		return nil, debug.ErrorNew("Unsupported channel value %d", n)
+		return nil, debug.Errorf("Unsupported channel value %d", n)
 	}
 }
 
@@ -196,7 +196,7 @@ func verifyChannelList(list []audio.Channel) ([]audio.Channel, error) {
 			audio.ChannelSurroundRight,
 		}, nil
 	default:
-		return nil, debug.ErrorNew("Unsupported channel list %v", list)
+		return nil, debug.Errorf("Unsupported channel list %v", list)
 	}
 }
 
@@ -208,7 +208,7 @@ func decodeWAV(a asset.Asset) (audio.Spec, int, []float32, error) {
 
 	//nolint:staticcheck
 	if C.SDL_LoadWAV_RW(cR, 0, &cSpec, &cBuf, &cLen) == nil {
-		err := debug.ErrorWrap(debug.ErrorNew(C.GoString(C.SDL_GetError())), "Failed to decode WAV")
+		err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to decode WAV")
 		C.SDL_ClearError()
 		return audio.Spec{}, 0, nil, err
 	}
@@ -217,14 +217,14 @@ func decodeWAV(a asset.Asset) (audio.Spec, int, []float32, error) {
 
 	channels, err := channelCountToList(int(cSpec.channels))
 	if err != nil {
-		return audio.Spec{}, 0, nil, debug.ErrorWrap(err, "Failed to decode WAV")
+		return audio.Spec{}, 0, nil, debug.ErrorWrapf(err, "Failed to decode WAV")
 	}
 
 	cCVT := C.SDL_AudioCVT{}
 
 	//nolint:staticcheck
 	if C.SDL_BuildAudioCVT(&cCVT, cSpec.format, cSpec.channels, cSpec.freq, C.AUDIO_F32SYS, cSpec.channels, cSpec.freq) < 0 {
-		err := debug.ErrorWrap(debug.ErrorNew(C.GoString(C.SDL_GetError())), "Failed to decode WAV")
+		err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to decode WAV")
 		C.SDL_ClearError()
 		return audio.Spec{}, 0, nil, err
 	}
@@ -245,14 +245,14 @@ func decodeWAV(a asset.Asset) (audio.Spec, int, []float32, error) {
 
 		//nolint:staticcheck
 		if C.SDL_ConvertAudio(&cCVT) < 0 {
-			err := debug.ErrorWrap(debug.ErrorNew(C.GoString(C.SDL_GetError())), "Failed to decode WAV")
+			err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to decode WAV")
 			C.SDL_ClearError()
 			return audio.Spec{}, 0, nil, err
 		}
 
 		if sz != int(cCVT.len_cvt) {
-			return audio.Spec{}, 0, nil, debug.ErrorWrap(
-				debug.ErrorNew("Calculated buffer size does not match SDL size, Got: %d SDL: %d",
+			return audio.Spec{}, 0, nil, debug.ErrorWrapf(
+				debug.Errorf("Calculated buffer size does not match SDL size, Got: %d SDL: %d",
 					sz, int(cCVT.len_cvt)), "Failed to decode WAV")
 		}
 
@@ -280,7 +280,7 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 	}
 
 	if C.SDL_InitSubSystem(C.SDL_INIT_AUDIO) != 0 {
-		err := debug.ErrorWrap(debug.ErrorNew(C.GoString(C.SDL_GetError())), "Failed to init SDL audio")
+		err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to init SDL audio")
 		C.SDL_ClearError()
 		return err
 	}
@@ -288,16 +288,16 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 	cfg := mixer.AudioConfig()
 
 	if len(cfg.Spec.Channels) == 0 {
-		return debug.ErrorWrap(debug.ErrorNew("No channels defined"), "Failed to init SDL audio")
+		return debug.ErrorWrapf(debug.Errorf("No channels defined"), "Failed to init SDL audio")
 	}
 
 	if cfg.BufferLength == 0 || (cfg.BufferLength&(cfg.BufferLength-1)) != 0 {
-		return debug.ErrorWrap(debug.ErrorNew("BufferLength must be a power of 2"), "Failed to init SDL audio")
+		return debug.ErrorWrapf(debug.Errorf("BufferLength must be a power of 2"), "Failed to init SDL audio")
 	}
 
 	channels, err := verifyChannelList(cfg.Spec.Channels)
 	if err != nil {
-		return debug.ErrorWrap(err, "Failed to init SDL audio")
+		return debug.ErrorWrapf(err, "Failed to init SDL audio")
 	}
 
 	cfg.Spec.Channels = channels
@@ -314,7 +314,7 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 	cAID := C.SDL_OpenAudioDevice(nil, 0, &want, &got, 0)
 
 	if cAID == 0 {
-		err := debug.ErrorWrap(debug.ErrorNew(C.GoString(C.SDL_GetError())), "Failed to init SDL audio")
+		err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to init SDL audio")
 		C.SDL_ClearError()
 		return err
 	}
@@ -322,14 +322,14 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 	cfg.Spec.Channels, err = channelCountToList(int(got.channels))
 
 	if err != nil {
-		return debug.ErrorWrap(err, "Failed to init SDL audio")
+		return debug.ErrorWrapf(err, "Failed to init SDL audio")
 	}
 
 	cfg.Spec.Frequency = int(got.freq)
 	cfg.BufferLength = int(got.samples)
 
 	if err := mixer.Init(cfg); err != nil {
-		return debug.ErrorWrap(err, "Failed to init SDL audio")
+		return debug.ErrorWrapf(err, "Failed to init SDL audio")
 	}
 
 	Platform.audio.cAID = cAID

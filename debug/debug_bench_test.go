@@ -49,11 +49,11 @@ func BenchmarkLogIgnore(b *testing.B) {
 func BenchmarkError(b *testing.B) {
 	b.Run("New", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_ = ErrorNew("TEST")
+			_ = Errorf("TEST")
 		}
 	})
 
-	err := ErrorNew("TEST")
+	err := Errorf("TEST")
 	_ = fmt.Sprintf("%v", err)
 
 	b.Run("Printf", func(b *testing.B) {
@@ -71,11 +71,11 @@ func BenchmarkError(b *testing.B) {
 
 	b.Run("Wrap", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_ = ErrorWrap(err, "TEST")
+			_ = ErrorWrapf(err, "TEST")
 		}
 	})
 
-	err = ErrorWrap(err, "TEST")
+	err = ErrorWrapf(err, "TEST")
 	_ = fmt.Sprintf("%v", err)
 
 	b.Run("PrintfWrapped", func(b *testing.B) {

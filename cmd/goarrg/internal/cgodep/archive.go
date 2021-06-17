@@ -30,18 +30,18 @@ import (
 func writeFile(from io.Reader, to string, mode os.FileMode) error {
 	f, err := os.OpenFile(to, os.O_CREATE|os.O_RDWR, mode)
 	if err != nil {
-		return debug.ErrorWrap(err, "Open file failed")
+		return debug.ErrorWrapf(err, "Open file failed")
 	}
 
 	defer f.Close()
 	_, err = io.Copy(f, from)
-	return debug.ErrorWrap(err, "Copy failed")
+	return debug.ErrorWrapf(err, "Copy failed")
 }
 
 func extractTARGZ(r io.Reader, dir string) error {
 	gzr, err := gzip.NewReader(r)
 	if err != nil {
-		return debug.ErrorWrap(err, "Unknown Error")
+		return debug.ErrorWrapf(err, "Unknown Error")
 	}
 
 	defer gzr.Close()
@@ -55,7 +55,7 @@ func extractTARGZ(r io.Reader, dir string) error {
 			return nil
 
 		case err != nil:
-			return debug.ErrorWrap(err, "Unknown Error")
+			return debug.ErrorWrapf(err, "Unknown Error")
 		}
 
 		target := header.Name[strings.IndexAny(header.Name, "/\\")+1:]
@@ -67,12 +67,12 @@ func extractTARGZ(r io.Reader, dir string) error {
 		switch header.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(filepath.Join(dir, target), 0o755); err != nil {
-				return debug.ErrorWrap(err, "Mkdir failed")
+				return debug.ErrorWrapf(err, "Mkdir failed")
 			}
 
 		case tar.TypeReg:
 			if err := writeFile(tr, filepath.Join(dir, target), os.FileMode(header.Mode)); err != nil {
-				return debug.ErrorWrap(err, "writeFile failed")
+				return debug.ErrorWrapf(err, "writeFile failed")
 			}
 		}
 	}

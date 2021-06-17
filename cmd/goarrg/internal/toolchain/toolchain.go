@@ -50,7 +50,7 @@ func printEnv() {
 
 func lookPathSetEnv(env, value string) {
 	if _, err := exec.LookPath(value); err != nil {
-		panic(debug.ErrorWrap(err, "Unable to find: %q", value))
+		panic(debug.ErrorWrapf(err, "Unable to find: %q", value))
 	}
 	if err := os.Setenv(env, value); err != nil {
 		panic(err)
@@ -145,7 +145,7 @@ func Setup() {
 	}
 
 	if p.toolchain == (toolchain{}) {
-		panic(debug.ErrorNew("CC/CXX/AR unset, no known defaults for target: %q", flagTarget))
+		panic(debug.Errorf("CC/CXX/AR unset, no known defaults for target: %q", flagTarget))
 	}
 
 	debug.LogI("Setting cgo toolchain for target: %s", flagTarget)

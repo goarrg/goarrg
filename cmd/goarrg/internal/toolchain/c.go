@@ -32,7 +32,7 @@ func FindHeader(cc, header string) (string, error) {
 	ex.Stdin = bytes.NewReader([]byte("#include<" + header + ">"))
 	out, err := ex.CombinedOutput()
 	if err != nil {
-		return "", debug.ErrorNew("Failed to find %q using %q: %q", header, cc, string(out))
+		return "", debug.Errorf("Failed to find %q using %q: %q", header, cc, string(out))
 	}
 
 	for _, s := range strings.Fields(string(out)) {
@@ -42,5 +42,5 @@ func FindHeader(cc, header string) (string, error) {
 	}
 
 	// should never be here
-	panic(debug.ErrorNew("%q found %q but unable to find header in output: %q", cc, header, string(out)))
+	panic(debug.Errorf("%q found %q but unable to find header in output: %q", cc, header, string(out)))
 }

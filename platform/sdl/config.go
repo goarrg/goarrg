@@ -55,15 +55,15 @@ func Setup(cfg Config) error {
 		}
 
 		if cfg.Window.Rect.W <= 0 {
-			return debug.ErrorNew("Invalid window size: %+v", cfg.Window.Rect)
+			return debug.Errorf("Invalid window size: %+v", cfg.Window.Rect)
 		}
 
 		if cfg.Window.Rect.H <= 0 {
-			return debug.ErrorNew("Invalid window size: %+v", cfg.Window.Rect)
+			return debug.Errorf("Invalid window size: %+v", cfg.Window.Rect)
 		}
 
 		if cfg.Window.Mode > WindowModeFullscreen {
-			return debug.ErrorNew("Invalid window mode: %d", cfg.Window.Mode)
+			return debug.Errorf("Invalid window mode: %d", cfg.Window.Mode)
 		}
 	}
 

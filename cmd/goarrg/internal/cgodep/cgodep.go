@@ -79,14 +79,14 @@ func cgoDepCache() string {
 func cleanDir(dir string) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		panic(debug.ErrorWrap(err, "Failed to scan directory: %q", dir))
+		panic(debug.ErrorWrapf(err, "Failed to scan directory: %q", dir))
 	}
 
 	for _, entry := range entries {
 		entry := filepath.Join(dir, entry.Name())
 		debug.LogV("Removing: %q", entry)
 		if err := os.RemoveAll(entry); err != nil {
-			panic(debug.ErrorWrap(err, "Failed to remove: %q", entry))
+			panic(debug.ErrorWrapf(err, "Failed to remove: %q", entry))
 		}
 	}
 }
@@ -94,7 +94,7 @@ func cleanDir(dir string) {
 func cleanDirFiltered(dir string, filter func(string, os.DirEntry) bool) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		panic(debug.ErrorWrap(err, "Failed to scan directory: %q", dir))
+		panic(debug.ErrorWrapf(err, "Failed to scan directory: %q", dir))
 	}
 
 	for _, entry := range entries {
@@ -102,7 +102,7 @@ func cleanDirFiltered(dir string, filter func(string, os.DirEntry) bool) {
 		if filter(target, entry) {
 			debug.LogV("Removing: %q", target)
 			if err := os.RemoveAll(target); err != nil {
-				panic(debug.ErrorWrap(err, "Failed to remove: %q", target))
+				panic(debug.ErrorWrapf(err, "Failed to remove: %q", target))
 			}
 		}
 	}
@@ -111,7 +111,7 @@ func cleanDirFiltered(dir string, filter func(string, os.DirEntry) bool) {
 func install(name string) {
 	// should never trigger, but just in case
 	if _, ok := cgoDeps[name]; !ok {
-		panic(debug.ErrorNew("Unknown cgodep %q", name))
+		panic(debug.Errorf("Unknown cgodep %q", name))
 	}
 
 	if !toolchain.CgoSupported() {
@@ -127,7 +127,7 @@ func install(name string) {
 	}
 
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		panic(debug.ErrorWrap(err, "Failed to create directory: %q", dir))
+		panic(debug.ErrorWrapf(err, "Failed to create directory: %q", dir))
 	}
 
 	cleanDir(dir)
@@ -138,12 +138,12 @@ func install(name string) {
 		meta := cgoDepMeta{Version: cgoDeps[name].version, CgoFlags: cgoFlags}
 		j, err := json.Marshal(meta)
 		if err != nil {
-			panic(debug.ErrorWrap(err, "json.Marshal failed"))
+			panic(debug.ErrorWrapf(err, "json.Marshal failed"))
 		}
 
 		metaFile := filepath.Join(dir, cgoDepMetaFileName)
 		if err := os.WriteFile(metaFile, j, 0o644); err != nil {
-			panic(debug.ErrorWrap(err, "Failed to write: %q", metaFile))
+			panic(debug.ErrorWrapf(err, "Failed to write: %q", metaFile))
 		}
 	}
 
@@ -191,7 +191,7 @@ func Check() {
 			info, err := os.Stat(dir)
 			if err != nil {
 				if !errors.Is(err, os.ErrNotExist) {
-					panic(debug.ErrorWrap(err, "Unknown error reading: %q", dir))
+					panic(debug.ErrorWrapf(err, "Unknown error reading: %q", dir))
 				}
 
 				debug.LogI("%q not found", name)
@@ -199,7 +199,7 @@ func Check() {
 			}
 
 			if !info.IsDir() {
-				panic(debug.ErrorNew("%q is not a directory", dir))
+				panic(debug.Errorf("%q is not a directory", dir))
 			}
 		}
 		{
@@ -208,7 +208,7 @@ func Check() {
 
 			// only care if error is not os.ErrNotExist, json.Unmarshal will take care of the rest
 			if err != nil && !errors.Is(err, os.ErrNotExist) {
-				panic(debug.ErrorWrap(err, "Unknown error reading: %q", metaFile))
+				panic(debug.ErrorWrapf(err, "Unknown error reading: %q", metaFile))
 			}
 
 			meta := cgoDepMeta{}
@@ -257,6 +257,6 @@ func Clean() {
 func CleanCache() {
 	err := os.RemoveAll(cgoDepCache())
 	if err != nil {
-		panic(debug.ErrorWrap(err, "Failed to clean C dependencies downloaded files"))
+		panic(debug.ErrorWrapf(err, "Failed to clean C dependencies downloaded files"))
 	}
 }

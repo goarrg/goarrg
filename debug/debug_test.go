@@ -27,7 +27,7 @@ import (
 )
 
 func stackTest() error {
-	return ErrorNew("Stack test")
+	return Errorf("Stack test")
 }
 
 func passthroughTest() error {
@@ -35,11 +35,11 @@ func passthroughTest() error {
 }
 
 func nestedStackTest() error {
-	return ErrorWrap(ErrorWrap(passthroughTest(), "Nested stack test"), "Double nested test")
+	return ErrorWrapf(ErrorWrapf(passthroughTest(), "Nested stack test"), "Double nested test")
 }
 
 func nestedNestedStackTest() error {
-	return ErrorWrap(nestedStackTest(), "Nested nested stack test")
+	return ErrorWrapf(nestedStackTest(), "Nested nested stack test")
 }
 
 func Test_debug(t *testing.T) {
@@ -52,17 +52,17 @@ func Test_debug(t *testing.T) {
 	LogW("W Test")
 	LogE("E Test")
 
-	err := ErrorNew("Err Test")
+	err := Errorf("Err Test")
 
 	LogE("%s", err)
 	LogErr(err)
 
-	err = ErrorWrap(err, "Chain test")
+	err = ErrorWrapf(err, "Chain test")
 
 	LogE("%s", err)
 	LogErr(err)
 
-	err = ErrorWrap(errors.New("Unknown error"), "Unknown error chain test")
+	err = ErrorWrapf(errors.New("Unknown error"), "Unknown error chain test")
 
 	LogE("%s", err)
 	LogErr(err)

@@ -72,7 +72,7 @@ func Load(file string) (Asset, error) {
 	debug.LogV("Loading asset [%s] from disk", file)
 	f, err := mapFile(file)
 	if err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to load asset %q", file)
+		return nil, debug.ErrorWrapf(err, "Failed to load asset %q", file)
 	}
 
 	a := asset{f, new(int64)}

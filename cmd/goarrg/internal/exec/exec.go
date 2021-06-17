@@ -47,7 +47,7 @@ func Run(c string, args ...string) error {
 		ex.Stdout = os.Stdout
 	}
 
-	return debug.ErrorWrap(ex.Run(), "Failed to run command")
+	return debug.ErrorWrapf(ex.Run(), "Failed to run command")
 }
 
 func RunOutput(c string, args ...string) ([]byte, error) {
@@ -68,7 +68,7 @@ func RunOutput(c string, args ...string) ([]byte, error) {
 	ex.Stderr = os.Stderr
 
 	out, err := ex.Output()
-	return out, debug.ErrorWrap(err, "Failed to run command")
+	return out, debug.ErrorWrapf(err, "Failed to run command")
 }
 
 func RunExit(c string, args ...string) int {

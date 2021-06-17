@@ -64,7 +64,7 @@ func init() {
 	cmd := exec.Command("go", "tool", "dist", "list", "-json")
 	j, err := cmd.Output()
 	if err != nil {
-		panic(debug.ErrorWrap(err, "Failed to get list of platforms"))
+		panic(debug.ErrorWrapf(err, "Failed to get list of platforms"))
 	}
 
 	list := []struct {
@@ -73,7 +73,7 @@ func init() {
 		CgoSupported bool
 	}{}
 	if err := json.Unmarshal(j, &list); err != nil {
-		panic(debug.ErrorWrap(err, "Failed to unmarshal json"))
+		panic(debug.ErrorWrapf(err, "Failed to unmarshal json"))
 	}
 
 	for _, entry := range list {

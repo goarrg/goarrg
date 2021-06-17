@@ -41,52 +41,52 @@ func loadQBT(a asset.Asset) (map[string]voxel.Model, error) {
 
 	// skip magic
 	if _, err := r.Discard(4); err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to decode as qbt format")
+		return nil, debug.ErrorWrapf(err, "Failed to decode as qbt format")
 	}
 
 	if err := binary.Read(r, binary.LittleEndian, version[:]); err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to decode as qbt format")
+		return nil, debug.ErrorWrapf(err, "Failed to decode as qbt format")
 	}
 
 	if version != [2]byte{1, 0} {
-		return nil, debug.ErrorWrap(debug.ErrorNew("Either bad or unsupported version %#x", version), "Failed to decode as qbt format")
+		return nil, debug.ErrorWrapf(debug.Errorf("Either bad or unsupported version %#x", version), "Failed to decode as qbt format")
 	}
 
 	if _, err := r.Discard(12); err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to decode as qbt format")
+		return nil, debug.ErrorWrapf(err, "Failed to decode as qbt format")
 	}
 
 	var section [8]byte
 
 	if err := binary.Read(r, binary.LittleEndian, section[:]); err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to decode as qbt format")
+		return nil, debug.ErrorWrapf(err, "Failed to decode as qbt format")
 	}
 
 	if string(section[:]) != "COLORMAP" {
-		return nil, debug.ErrorWrap(debug.ErrorNew("Bad file structure"), "Failed to decode as qbt format")
+		return nil, debug.ErrorWrapf(debug.Errorf("Bad file structure"), "Failed to decode as qbt format")
 	}
 
 	var colorCount uint32
 
 	if err := binary.Read(r, binary.LittleEndian, &colorCount); err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to decode as qbt format")
+		return nil, debug.ErrorWrapf(err, "Failed to decode as qbt format")
 	}
 
 	if colorCount != 0 {
-		return nil, debug.ErrorWrap(debug.ErrorNew("Colormap is unsupported"), "Failed to decode as qbt format")
+		return nil, debug.ErrorWrapf(debug.Errorf("Colormap is unsupported"), "Failed to decode as qbt format")
 	}
 
 	if err := binary.Read(r, binary.LittleEndian, section[:]); err != nil {
-		return nil, debug.ErrorWrap(err, "Failed to decode as qbt format")
+		return nil, debug.ErrorWrapf(err, "Failed to decode as qbt format")
 	}
 
 	if string(section[:]) != "DATATREE" {
-		return nil, debug.ErrorWrap(debug.ErrorNew("Bad file structure"), "Failed to decode as qbt format")
+		return nil, debug.ErrorWrapf(debug.Errorf("Bad file structure"), "Failed to decode as qbt format")
 	}
 
 	m := make(map[string]voxel.Model)
 
-	if err := debug.ErrorWrap(loadNode(r, m), "Failed to decode as qbt format"); err != nil {
+	if err := debug.ErrorWrapf(loadNode(r, m), "Failed to decode as qbt format"); err != nil {
 		return nil, err
 	}
 
@@ -108,7 +108,7 @@ func loadNode(r *bufio.Reader, m map[string]voxel.Model) error {
 	}
 
 	if sz == 0 {
-		return debug.ErrorNew("Bad node size %d %d", sz, t)
+		return debug.Errorf("Bad node size %d %d", sz, t)
 	}
 
 	switch t {
@@ -117,7 +117,7 @@ func loadNode(r *bufio.Reader, m map[string]voxel.Model) error {
 	case 1:
 		return loadModel(r, m)
 	default:
-		return debug.ErrorNew("WTF? %d", t)
+		return debug.Errorf("WTF? %d", t)
 	}
 }
 
@@ -130,53 +130,53 @@ func loadMatrix(r *bufio.Reader, m map[string]voxel.Model) error {
 	}
 
 	if nameSZ == 0 {
-		return debug.ErrorWrap(debug.ErrorNew("Bad name size %d", nameSZ), "Failed to load matrix")
+		return debug.ErrorWrapf(debug.Errorf("Bad name size %d", nameSZ), "Failed to load matrix")
 	}
 
 	name = make([]byte, nameSZ)
 
 	if _, err := io.ReadFull(r, name); err != nil {
-		return debug.ErrorWrap(err, "Failed to load matrix")
+		return debug.ErrorWrapf(err, "Failed to load matrix")
 	}
 
 	if _, err := r.Discard(12); err != nil {
-		return debug.ErrorWrap(err, "Failed to load matrix")
+		return debug.ErrorWrapf(err, "Failed to load matrix")
 	}
 
 	if _, err := r.Discard(12); err != nil {
-		return debug.ErrorWrap(err, "Failed to load matrix")
+		return debug.ErrorWrapf(err, "Failed to load matrix")
 	}
 
 	if _, err := r.Discard(12); err != nil {
-		return debug.ErrorWrap(err, "Failed to load matrix")
+		return debug.ErrorWrapf(err, "Failed to load matrix")
 	}
 
 	var modelDimensions [3]uint32
 
 	if err := binary.Read(r, binary.LittleEndian, modelDimensions[:]); err != nil {
-		return debug.ErrorWrap(err, "Failed to load matrix")
+		return debug.ErrorWrapf(err, "Failed to load matrix")
 	}
 
 	var dataSZ uint32
 
 	if err := binary.Read(r, binary.LittleEndian, &dataSZ); err != nil {
-		return debug.ErrorWrap(err, "Failed to load matrix")
+		return debug.ErrorWrapf(err, "Failed to load matrix")
 	}
 
 	if dataSZ == 0 {
-		return debug.ErrorWrap(debug.ErrorNew("Bad data size %d", dataSZ), "Failed to load matrix")
+		return debug.ErrorWrapf(debug.Errorf("Bad data size %d", dataSZ), "Failed to load matrix")
 	}
 
 	data := bytes.NewBuffer(make([]byte, 0, int64(dataSZ)))
 
 	_, err := io.CopyN(data, r, int64(dataSZ))
 	if err != nil {
-		return debug.ErrorWrap(err, "Failed to load matrix")
+		return debug.ErrorWrapf(err, "Failed to load matrix")
 	}
 
 	zr, err := zlib.NewReader(data)
 	if err != nil {
-		return debug.ErrorWrap(err, "Failed to load matrix")
+		return debug.ErrorWrapf(err, "Failed to load matrix")
 	}
 
 	defer zr.Close()
@@ -189,7 +189,7 @@ func loadMatrix(r *bufio.Reader, m map[string]voxel.Model) error {
 				var voxel [4]byte
 
 				if n, err := zr.Read(voxel[:]); err != nil && n != 4 {
-					return debug.ErrorWrap(debug.ErrorWrap(err, "Failed to decode voxels"), "Failed to load matrix %d %d %d", x, y, z)
+					return debug.ErrorWrapf(debug.ErrorWrapf(err, "Failed to decode voxels"), "Failed to load matrix %d %d %d", x, y, z)
 				}
 
 				if voxel[3] > 0 {
@@ -218,18 +218,18 @@ func loadModel(r *bufio.Reader, m map[string]voxel.Model) error {
 
 	err := binary.Read(r, binary.LittleEndian, &children)
 	if err != nil {
-		return debug.ErrorWrap(err, "Failed to load model")
+		return debug.ErrorWrapf(err, "Failed to load model")
 	}
 
 	if children == 0 {
-		return debug.ErrorWrap(debug.ErrorNew("Invalid children number"), "Failed to load model")
+		return debug.ErrorWrapf(debug.Errorf("Invalid children number"), "Failed to load model")
 	}
 
 	for i := uint32(0); i < children; i++ {
 		err = loadNode(r, m)
 
 		if err != nil {
-			return debug.ErrorWrap(err, "Failed to load model")
+			return debug.ErrorWrapf(err, "Failed to load model")
 		}
 	}
 

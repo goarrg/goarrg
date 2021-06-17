@@ -73,15 +73,15 @@ func Run(cfg Config) error {
 	defer atomic.StoreInt32(&system.state, stateTerminated)
 
 	if cfg.Platform == nil {
-		return debug.ErrorNew("Invalid platform")
+		return debug.Errorf("Invalid platform")
 	}
 
 	if cfg.Renderer == nil {
-		return debug.ErrorNew("Invalid renderer")
+		return debug.Errorf("Invalid renderer")
 	}
 
 	if cfg.Program == nil {
-		return debug.ErrorNew("Invalid program")
+		return debug.Errorf("Invalid program")
 	}
 
 	system.platform = cfg.Platform
@@ -90,20 +90,20 @@ func Run(cfg Config) error {
 	system.program = cfg.Program
 
 	if err := system.platform.Init(); err != nil {
-		return debug.ErrorWrap(err, "Failed to init platform")
+		return debug.ErrorWrapf(err, "Failed to init platform")
 	}
 
 	defer system.platform.Destroy()
 
 	if err := system.platform.DisplayInit(cfg.Renderer); err != nil {
-		return debug.ErrorWrap(err, "Failed to init platform display")
+		return debug.ErrorWrapf(err, "Failed to init platform display")
 	}
 
 	defer system.renderer.Destroy()
 
 	if system.audio != nil {
 		if err := system.platform.AudioInit(cfg.Audio); err != nil {
-			return debug.ErrorWrap(err, "Failed to init platform audio")
+			return debug.ErrorWrapf(err, "Failed to init platform audio")
 		}
 
 		defer system.audio.Destroy()
@@ -112,7 +112,7 @@ func Run(cfg Config) error {
 	}
 
 	if err := system.program.Init(); err != nil {
-		return debug.ErrorWrap(err, "Failed to init user program")
+		return debug.ErrorWrapf(err, "Failed to init user program")
 	}
 
 	defer system.program.Destroy()

@@ -28,7 +28,7 @@ type errorNode struct {
 	next  error
 }
 
-func ErrorNew(format string, args ...interface{}) error {
+func Errorf(format string, args ...interface{}) error {
 	if len(args) == 0 {
 		return &errorNode{
 			stack: stack{pcs: callers(1)},
@@ -42,7 +42,7 @@ func ErrorNew(format string, args ...interface{}) error {
 	}
 }
 
-func ErrorWrap(err error, format string, args ...interface{}) error {
+func ErrorWrapf(err error, format string, args ...interface{}) error {
 	if err == nil {
 		return nil
 	}
