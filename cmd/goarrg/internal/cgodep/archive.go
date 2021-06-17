@@ -33,9 +33,13 @@ func writeFile(from io.Reader, to string, mode os.FileMode) error {
 		return debug.ErrorWrapf(err, "Open file failed")
 	}
 
-	defer f.Close()
-	_, err = io.Copy(f, from)
-	return debug.ErrorWrapf(err, "Copy failed")
+	if _, err = io.Copy(f, from); err != nil {
+		// if we failed to copy we don't care that we failed to Close()
+		// data will be corrupted anyway
+		return debug.ErrorWrapf(err, "Copy failed")
+	}
+
+	return debug.ErrorWrapf(f.Close(), "Close file failed")
 }
 
 func extractTARGZ(r io.Reader, dir string) error {
