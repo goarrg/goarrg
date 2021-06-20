@@ -37,28 +37,28 @@ func mapFile(f string) (file, error) {
 	info, err := os.Stat(f)
 
 	if err != nil {
-		return file{}, debug.ErrorWrap(err, "Failed to map file")
+		return file{}, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
 	if info.Size() == 0 {
-		return file{}, debug.ErrorWrap(debug.ErrorNew("Empty file"), "Failed to map file")
+		return file{}, debug.ErrorWrapf(debug.Errorf("Empty file"), "Failed to map file")
 	}
 
 	if unsafe.Sizeof(int(0)) != unsafe.Sizeof(int64(0)) && info.Size() > math.MaxInt32 {
-		return file{}, debug.ErrorWrap(debug.ErrorNew("File too big"), "Failed to map file")
+		return file{}, debug.ErrorWrapf(debug.Errorf("File too big"), "Failed to map file")
 	}
 
 	fd, err := unix.Open(f, unix.O_RDONLY, 0)
 
 	if err != nil {
-		return file{}, debug.ErrorWrap(err, "Failed to map file")
+		return file{}, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
 	data, err := unix.Mmap(fd, 0, int(info.Size()), unix.PROT_READ, unix.MAP_SHARED)
 
 	if err != nil {
 		unix.Close(fd)
-		return file{}, debug.ErrorWrap(err, "Failed to map file")
+		return file{}, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
 	return file{
@@ -70,6 +70,6 @@ func mapFile(f string) (file, error) {
 }
 
 func (f *file) close() {
-	debug.LogErr(debug.ErrorWrap(unix.Munmap(f.data), "Failed to unmap file"))
+	debug.LogErr(debug.ErrorWrapf(unix.Munmap(f.data), "Failed to unmap file"))
 	unix.Close(f.fd)
 }

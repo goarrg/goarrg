@@ -21,7 +21,7 @@ import (
 )
 
 func init() {
-	LogErr(ErrorWrap(unix.Setrlimit(unix.RLIMIT_CORE, &unix.Rlimit{
+	LogErr(ErrorWrapf(unix.Setrlimit(unix.RLIMIT_CORE, &unix.Rlimit{
 		Cur: unix.RLIM_INFINITY,
 		Max: unix.RLIM_INFINITY,
 	}), "Failed to set rlimit"))
