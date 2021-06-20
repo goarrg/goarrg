@@ -24,5 +24,5 @@ import (
 )
 
 func glInit(r goarrg.GLRenderer) error {
-	return debug.ErrorNew("OpenGL driver is disabled")
+	return debug.Errorf("OpenGL driver is disabled")
 }

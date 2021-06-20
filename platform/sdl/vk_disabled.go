@@ -24,5 +24,5 @@ import (
 )
 
 func vkInit(r goarrg.VkRenderer) error {
-	return debug.ErrorNew("Vulkan driver is disabled")
+	return debug.Errorf("Vulkan driver is disabled")
 }
