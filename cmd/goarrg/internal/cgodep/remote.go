@@ -29,9 +29,9 @@ import (
 	"golang.org/x/crypto/openpgp"
 )
 
-func get(url string, verify func([]byte) error) ([]byte, error) {
+func get(url string, fileName string, verify func([]byte) error) ([]byte, error) {
 	cacheDir := cgoDepCache()
-	fileName := filepath.Join(cacheDir, filepath.Base(url))
+	fileName = filepath.Join(cacheDir, fileName)
 
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
 		panic(debug.ErrorWrapf(err, "Failed to create download cache dir: %q", cacheDir))

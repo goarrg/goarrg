@@ -114,7 +114,7 @@ func sdlInstall(installDir string) cgoFlags {
 		os.Exit(2)
 	}
 
-	data, err := get("https://www.libsdl.org/release/"+sdlVR+".tar.gz", func(data []byte) error {
+	data, err := get("https://www.libsdl.org/release/"+sdlVR+".tar.gz", "SDL2.tar.gz", func(data []byte) error {
 		if err := verifyPGP(data, []byte(sdlPK), sdlSig); err != nil {
 			return err
 		}
