@@ -269,9 +269,13 @@ func (vkw *vkWindow) resize(w int, h int) {
 	vkw.windowW = w
 	vkw.windowH = h
 
-	var cW, cH C.int
-	C.SDL_Vulkan_GetDrawableSize(Platform.display.mainWindow.cWindow, &cW, &cH)
-	vkw.renderer.Resize(int(cW), int(cH))
+	if w != 0 && h != 0 {
+		var cW, cH C.int
+		C.SDL_Vulkan_GetDrawableSize(Platform.display.mainWindow.cWindow, &cW, &cH)
+		vkw.renderer.Resize(int(cW), int(cH))
+	} else {
+		vkw.renderer.Resize(0, 0)
+	}
 }
 
 func (vkw *vkWindow) destroy() {

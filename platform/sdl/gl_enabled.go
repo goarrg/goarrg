@@ -110,9 +110,13 @@ func (glw *glWindow) resize(w int, h int) {
 	glw.windowW = w
 	glw.windowH = h
 
-	var cW, cH C.int
-	C.SDL_GL_GetDrawableSize(Platform.display.mainWindow.cWindow, &cW, &cH)
-	glw.renderer.Resize(int(cW), int(cH))
+	if w != 0 && h != 0 {
+		var cW, cH C.int
+		C.SDL_GL_GetDrawableSize(Platform.display.mainWindow.cWindow, &cW, &cH)
+		glw.renderer.Resize(int(cW), int(cH))
+	} else {
+		glw.renderer.Resize(0, 0)
+	}
 }
 
 func (glw *glWindow) destroy() {

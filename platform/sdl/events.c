@@ -23,18 +23,15 @@ void processWindowEvent(goEvent* ge, SDL_WindowEvent e) {
 			ge->windowState = (ge->windowState | WINDOW_CREATED);
 			break;
 		case SDL_WINDOWEVENT_SHOWN:
+		case SDL_WINDOWEVENT_RESTORED:
 			ge->windowState = (ge->windowState | WINDOW_SHOWN) & ~WINDOW_HIDDEN;
 			break;
 		case SDL_WINDOWEVENT_HIDDEN:
+		case SDL_WINDOWEVENT_MINIMIZED:
 			ge->windowState = (ge->windowState | WINDOW_HIDDEN) & ~WINDOW_SHOWN;
 			break;
 
-		// For some reason resizing on the left side of the window sends a move
-		// event and not a resize event. So combine the 2 events then later
-		// detect the size/pos.
 		case SDL_WINDOWEVENT_MOVED:
-			ge->windowState = (ge->windowState | WINDOW_RECT_CHANGED);
-			break;
 		case SDL_WINDOWEVENT_RESIZED:
 			ge->windowState = (ge->windowState | WINDOW_RECT_CHANGED);
 			break;

@@ -136,8 +136,8 @@ func createWindow(flags C.uint32_t) error {
 }
 
 func (window *window) processEvent(e windowEvent) {
-	switch {
-	case (e.event & windowEventCreated) != 0:
+	if (e.event & windowEventCreated) != 0 {
+		debug.LogV("[SDL] Window event created")
 		C.SDL_ShowWindow(window.cWindow)
 
 		cRect := C.SDL_Rect{}
@@ -157,8 +157,10 @@ func (window *window) processEvent(e windowEvent) {
 			that since the window will be on top of everything.
 		*/
 		window.mouseFocus = true
+	}
 
-	case (e.event & windowEventRectChanged) != 0:
+	if (e.event & windowEventRectChanged) != 0 {
+		debug.LogV("[SDL] Window event rect changed")
 		cRect := C.SDL_Rect{}
 		C.SDL_GetWindowPosition(window.cWindow, &cRect.x, &cRect.y)
 		C.SDL_GetWindowSize(window.cWindow, &cRect.w, &cRect.h)
@@ -171,16 +173,34 @@ func (window *window) processEvent(e windowEvent) {
 		if oldRect.W != window.rect.W || oldRect.H != window.rect.H {
 			window.api.resize(window.rect.W, window.rect.H)
 		}
+	} else if (e.event & windowEventShown) != 0 {
+		debug.LogV("[SDL] Window event shown")
+		window.api.resize(window.rect.W, window.rect.H)
+	}
 
-	case (e.event & windowEventFocusGained) != 0:
+	if (e.event & windowEventFocusGained) != 0 {
+		debug.LogV("[SDL] Window event focus gained")
 		window.keyboardFocus = true
-	case (e.event & windowEventFocusLost) != 0:
-		window.keyboardFocus = false
+	}
 
-	case (e.event & windowEventEnter) != 0:
+	if (e.event & windowEventFocusLost) != 0 {
+		debug.LogV("[SDL] Window event focus lost")
+		window.keyboardFocus = false
+	}
+
+	if (e.event & windowEventEnter) != 0 {
+		debug.LogV("[SDL] Window event enter")
 		window.mouseFocus = true
-	case (e.event & windowEventLeave) != 0:
+	}
+
+	if (e.event & windowEventLeave) != 0 {
+		debug.LogV("[SDL] Window event leave")
 		window.mouseFocus = false
+	}
+
+	if (e.event & windowEventHidden) != 0 {
+		debug.LogV("[SDL] Window event hidden")
+		window.api.resize(0, 0)
 	}
 }
 
