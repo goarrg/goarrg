@@ -139,6 +139,7 @@ func (window *window) processEvent(e windowEvent) {
 	if (e.event & windowEventCreated) != 0 {
 		debug.LogV("[SDL] Window event created")
 		C.SDL_ShowWindow(window.cWindow)
+		C.SDL_FlushEvent(C.SDL_WINDOWEVENT)
 
 		cRect := C.SDL_Rect{}
 		C.SDL_GetWindowPosition(window.cWindow, &cRect.x, &cRect.y)
