@@ -216,3 +216,7 @@ func (window *window) destroy() {
 		debug.LogE("SDL_DestroyWindow failed: %s", err)
 	}
 }
+
+func SetWindowTitle(title string) {
+	C.setWindowTitle(Platform.display.mainWindow.cWindow, title)
+}
