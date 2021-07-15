@@ -36,7 +36,7 @@ func Run(c string, args ...string) error {
 				cmd += " " + arg
 			}
 		}
-		debug.LogI("Running: %s", cmd)
+		debug.IPrintf("Running: %s", cmd)
 	}
 
 	ex := exec.Command(c, args...)
@@ -60,7 +60,7 @@ func RunOutput(c string, args ...string) ([]byte, error) {
 				cmd += " " + arg
 			}
 		}
-		debug.LogI("Running: %s", cmd)
+		debug.IPrintf("Running: %s", cmd)
 	}
 
 	ex := exec.Command(c, args...)
@@ -81,7 +81,7 @@ func RunExit(c string, args ...string) int {
 				cmd += " " + arg
 			}
 		}
-		debug.LogI("Running: %s", cmd)
+		debug.IPrintf("Running: %s", cmd)
 	}
 
 	ex := exec.Command(c, args...)

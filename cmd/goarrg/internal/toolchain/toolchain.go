@@ -39,12 +39,12 @@ func printEnv() {
 
 	if targetOS == "windows" {
 		if runtime.GOOS == "windows" {
-			debug.LogI("go env\n%sset RC=%s", env, os.Getenv("RC"))
+			debug.IPrintf("go env\n%sset RC=%s", env, os.Getenv("RC"))
 		} else {
-			debug.LogI("go env\n%sRC=%s", env, os.Getenv("RC"))
+			debug.IPrintf("go env\n%sRC=%s", env, os.Getenv("RC"))
 		}
 	} else {
-		debug.LogI("go env\n%s", env)
+		debug.IPrintf("go env\n%s", strings.TrimSpace(string(env)))
 	}
 }
 
@@ -58,7 +58,7 @@ func lookPathSetEnv(env, value string) {
 }
 
 func Setup() {
-	debug.LogI("Setting up go")
+	debug.IPrintf("Setting up go")
 
 	{
 		gocache := filepath.Join(cmd.ModuleDataPath(), "gocache")
@@ -79,7 +79,7 @@ func Setup() {
 		if err := os.Setenv("GOARCH", targetArch); err != nil {
 			panic(err)
 		}
-		debug.LogW("cgo unsupported on target: %q", flagTarget)
+		debug.WPrintf("cgo unsupported on target: %q", flagTarget)
 		printEnv()
 		return
 	}
@@ -125,7 +125,7 @@ func Setup() {
 		return
 	}
 
-	debug.LogI("Detected cross compiling target: %s", flagTarget)
+	debug.IPrintf("Detected cross compiling target: %s", flagTarget)
 
 	{
 		ccSet := os.Getenv("CC") != ""
@@ -148,7 +148,7 @@ func Setup() {
 		panic(debug.Errorf("CC/CXX/AR unset, no known defaults for target: %q", flagTarget))
 	}
 
-	debug.LogI("Setting cgo toolchain for target: %s", flagTarget)
+	debug.IPrintf("Setting cgo toolchain for target: %s", flagTarget)
 
 	lookPathSetEnv("CC", p.toolchain.cc)
 	lookPathSetEnv("CXX", p.toolchain.cxx)

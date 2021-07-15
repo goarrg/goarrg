@@ -24,6 +24,7 @@ package sdl
 	#include "vk.h"
 */
 import "C"
+
 import (
 	"fmt"
 	"reflect"
@@ -137,16 +138,15 @@ type vkWindow struct {
 }
 
 func vkInit(r goarrg.VkRenderer) error {
-	debug.LogV("SDL creating vk Window")
+	Platform.logger.IPrintf("Creating vk Window")
 
 	if r == nil {
 		err := debug.Errorf("Invalid renderer")
-		debug.LogE("SDL failed to create window: Invalid renderer")
+		Platform.logger.EPrintf("failed to create window: Invalid renderer")
 		return err
 	}
 
 	err := createWindow(C.SDL_WINDOW_VULKAN)
-
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func vkInit(r goarrg.VkRenderer) error {
 	cInstance := C.VkInstance(nil)
 	cSurface := C.VkSurfaceKHR(nil)
 
-	debug.LogV("Renderer requested config: %+v", vkCfg)
+	Platform.logger.IPrintf("Renderer requested config: %+v", vkCfg)
 
 	{
 		cNumSDLExt := C.uint(0)
@@ -260,7 +260,7 @@ func vkInit(r goarrg.VkRenderer) error {
 	}
 
 	Platform.display.mainWindow.api.resize(Platform.config.Window.Rect.W, Platform.config.Window.Rect.H)
-	debug.LogV("SDL created vk window")
+	Platform.logger.IPrintf("Created vk window")
 
 	return nil
 }

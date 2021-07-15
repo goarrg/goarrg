@@ -49,7 +49,7 @@ func init() {
 			Name: d.Name,
 			Run: func(args []string) bool {
 				if len(args) != 0 {
-					debug.LogE("Invalid args: %q", args)
+					debug.EPrintf("Invalid args: %q", args)
 					return false
 				}
 
@@ -75,9 +75,9 @@ func init() {
 }
 
 func run(args []string) bool {
-	debug.LogE("Please specify what do you want to install")
+	debug.EPrintf("Please specify what do you want to install")
 	if len(args) != 0 {
-		debug.LogE("Invalid args: %q", args)
+		debug.EPrintf("Invalid args: %q", args)
 	}
 	return false
 }

@@ -20,7 +20,6 @@ package debug
 
 import (
 	"errors"
-	"log"
 	"regexp"
 	"strings"
 	"testing"
@@ -42,35 +41,77 @@ func nestedNestedStackTest() error {
 	return ErrorWrapf(nestedStackTest(), "Nested nested stack test")
 }
 
+func runLoggerTests(l *Logger) {
+	l.SetLevel(LogLevelVerbose)
+	l.VPrint(0, "VPrint Test", 1)
+	l.VPrintln(0, "VPrintln Test", 1)
+	l.VPrintf("VPrintf Test %d", 123)
+
+	l.IPrint(0, "IPrint Test", 1)
+	l.IPrintln(0, "IPrintln Test", 1)
+	l.IPrintf("IPrintf Test %d", 123)
+
+	l.WPrint(0, "WPrint Test", 1)
+	l.WPrintln(0, "WPrintln Test", 1)
+	l.WPrintf("WPrintf Test %d", 123)
+
+	l.EPrint(0, "EPrint Test", 1)
+	l.EPrintln(0, "EPrintln Test", 1)
+	l.EPrintf("EPrintf Test %d", 123)
+}
+
 func Test_debug(t *testing.T) {
 	buf := &strings.Builder{}
-	logOut = log.New(buf, "", 0).Output
-	LogSetLevel(LogLevelVerbose)
+	loggerOut = buf
 
-	LogV("V Test")
-	LogI("I Test")
-	LogW("W Test")
-	LogE("E Test")
+	// global logger tests
+	{
+		SetLevel(LogLevelVerbose)
+		VPrint(0, "VPrint Test", 1)
+		VPrintln(0, "VPrintln Test", 1)
+		VPrintf("VPrintf Test %d", 123)
+
+		IPrint(0, "IPrint Test", 1)
+		IPrintln(0, "IPrintln Test", 1)
+		IPrintf("IPrintf Test %d", 123)
+
+		WPrint(0, "WPrint Test", 1)
+		WPrintln(0, "WPrintln Test", 1)
+		WPrintf("WPrintf Test %d", 123)
+
+		EPrint(0, "EPrint Test", 1)
+		EPrintln(0, "EPrintln Test", 1)
+		EPrintf("EPrintf Test %d", 123)
+	}
+
+	logger := NewLogger()
+	runLoggerTests(logger)
+
+	taggedLogger := NewLogger("TAG")
+	runLoggerTests(taggedLogger)
+
+	taggedLogger = taggedLogger.NewLoggerWithTags("TAG2")
+	runLoggerTests(taggedLogger)
 
 	err := Errorf("Err Test")
 
-	LogE("%s", err)
-	LogErr(err)
+	logger.EPrintf("%s", err)
+	logger.EPrint(err)
 
 	err = ErrorWrapf(err, "Chain test")
 
-	LogE("%s", err)
-	LogErr(err)
+	logger.EPrintf("%s", err)
+	logger.EPrint(err)
 
 	err = ErrorWrapf(errors.New("Unknown error"), "Unknown error chain test")
 
-	LogE("%s", err)
-	LogErr(err)
+	logger.EPrintf("%s", err)
+	logger.EPrint(err)
 
-	LogErr(stackTest())
-	LogErr(nestedNestedStackTest())
+	logger.EPrint(stackTest())
+	logger.EPrint(nestedNestedStackTest())
 
-	LogE("%s", StackTrace(0))
+	logger.EPrintf("%s", StackTrace(0))
 
 	r := regexp.MustCompile(output)
 
@@ -81,34 +122,78 @@ func Test_debug(t *testing.T) {
 	}
 }
 
-const output = `^\[VERBOSE\] V Test
-\[INFO\]    I Test
-\[WARN\]    W Test
-\[ERROR\]   E Test
-\[ERROR\]   Err Test
-\[ERROR\]   Err Test
+const output = `^\d*:\d*:\d*.\d* \[VERBOSE\] 0VPrint Test1
+\d*:\d*:\d*.\d* \[VERBOSE\] 0 VPrintln Test 1
+\d*:\d*:\d*.\d* \[VERBOSE\] VPrintf Test 123
+\d*:\d*:\d*.\d* \[INFO\]    0IPrint Test1
+\d*:\d*:\d*.\d* \[INFO\]    0 IPrintln Test 1
+\d*:\d*:\d*.\d* \[INFO\]    IPrintf Test 123
+\d*:\d*:\d*.\d* \[WARN\]    0WPrint Test1
+\d*:\d*:\d*.\d* \[WARN\]    0 WPrintln Test 1
+\d*:\d*:\d*.\d* \[WARN\]    WPrintf Test 123
+\d*:\d*:\d*.\d* \[ERROR\]   0EPrint Test1
+\d*:\d*:\d*.\d* \[ERROR\]   0 EPrintln Test 1
+\d*:\d*:\d*.\d* \[ERROR\]   EPrintf Test 123
+\d*:\d*:\d*.\d* \[VERBOSE\] 0VPrint Test1
+\d*:\d*:\d*.\d* \[VERBOSE\] 0 VPrintln Test 1
+\d*:\d*:\d*.\d* \[VERBOSE\] VPrintf Test 123
+\d*:\d*:\d*.\d* \[INFO\]    0IPrint Test1
+\d*:\d*:\d*.\d* \[INFO\]    0 IPrintln Test 1
+\d*:\d*:\d*.\d* \[INFO\]    IPrintf Test 123
+\d*:\d*:\d*.\d* \[WARN\]    0WPrint Test1
+\d*:\d*:\d*.\d* \[WARN\]    0 WPrintln Test 1
+\d*:\d*:\d*.\d* \[WARN\]    WPrintf Test 123
+\d*:\d*:\d*.\d* \[ERROR\]   0EPrint Test1
+\d*:\d*:\d*.\d* \[ERROR\]   0 EPrintln Test 1
+\d*:\d*:\d*.\d* \[ERROR\]   EPrintf Test 123
+\d*:\d*:\d*.\d* \[VERBOSE\] \[TAG\] 0VPrint Test1
+\d*:\d*:\d*.\d* \[VERBOSE\] \[TAG\] 0 VPrintln Test 1
+\d*:\d*:\d*.\d* \[VERBOSE\] \[TAG\] VPrintf Test 123
+\d*:\d*:\d*.\d* \[INFO\]    \[TAG\] 0IPrint Test1
+\d*:\d*:\d*.\d* \[INFO\]    \[TAG\] 0 IPrintln Test 1
+\d*:\d*:\d*.\d* \[INFO\]    \[TAG\] IPrintf Test 123
+\d*:\d*:\d*.\d* \[WARN\]    \[TAG\] 0WPrint Test1
+\d*:\d*:\d*.\d* \[WARN\]    \[TAG\] 0 WPrintln Test 1
+\d*:\d*:\d*.\d* \[WARN\]    \[TAG\] WPrintf Test 123
+\d*:\d*:\d*.\d* \[ERROR\]   \[TAG\] 0EPrint Test1
+\d*:\d*:\d*.\d* \[ERROR\]   \[TAG\] 0 EPrintln Test 1
+\d*:\d*:\d*.\d* \[ERROR\]   \[TAG\] EPrintf Test 123
+\d*:\d*:\d*.\d* \[VERBOSE\] \[TAG\] \[TAG2\] 0VPrint Test1
+\d*:\d*:\d*.\d* \[VERBOSE\] \[TAG\] \[TAG2\] 0 VPrintln Test 1
+\d*:\d*:\d*.\d* \[VERBOSE\] \[TAG\] \[TAG2\] VPrintf Test 123
+\d*:\d*:\d*.\d* \[INFO\]    \[TAG\] \[TAG2\] 0IPrint Test1
+\d*:\d*:\d*.\d* \[INFO\]    \[TAG\] \[TAG2\] 0 IPrintln Test 1
+\d*:\d*:\d*.\d* \[INFO\]    \[TAG\] \[TAG2\] IPrintf Test 123
+\d*:\d*:\d*.\d* \[WARN\]    \[TAG\] \[TAG2\] 0WPrint Test1
+\d*:\d*:\d*.\d* \[WARN\]    \[TAG\] \[TAG2\] 0 WPrintln Test 1
+\d*:\d*:\d*.\d* \[WARN\]    \[TAG\] \[TAG2\] WPrintf Test 123
+\d*:\d*:\d*.\d* \[ERROR\]   \[TAG\] \[TAG2\] 0EPrint Test1
+\d*:\d*:\d*.\d* \[ERROR\]   \[TAG\] \[TAG2\] 0 EPrintln Test 1
+\d*:\d*:\d*.\d* \[ERROR\]   \[TAG\] \[TAG2\] EPrintf Test 123
+\d*:\d*:\d*.\d* \[ERROR\]   Err Test
+\d*:\d*:\d*.\d* \[ERROR\]   Err Test
 	.*
 		.*\S:\d*
-\[ERROR\]   Chain test: Err Test
-\[ERROR\]   Err Test
+\d*:\d*:\d*.\d* \[ERROR\]   Chain test: Err Test
+\d*:\d*:\d*.\d* \[ERROR\]   Err Test
 	.*
 		.*\S:\d*
 
 Chain test
 	.*
 		.*\S:\d*
-\[ERROR\]   Unknown error chain test: Unknown error
-\[ERROR\]   Unknown error
+\d*:\d*:\d*.\d* \[ERROR\]   Unknown error chain test: Unknown error
+\d*:\d*:\d*.\d* \[ERROR\]   Unknown error
 
 Unknown error chain test
 	.*
 		.*\S:\d*
-\[ERROR\]   Stack test
+\d*:\d*:\d*.\d* \[ERROR\]   Stack test
 	.*
 		.*\S:\d*
 	.*
 		.*\S:\d*
-\[ERROR\]   Stack test
+\d*:\d*:\d*.\d* \[ERROR\]   Stack test
 	.*
 		.*\S:\d*
 	.*
@@ -127,6 +212,6 @@ Nested nested stack test
 		.*\S:\d*
 	.*
 		.*\S:\d*
-\[ERROR\]   .*
+\d*:\d*:\d*.\d* \[ERROR\]   .*
 	.*\S:\d*
 $`

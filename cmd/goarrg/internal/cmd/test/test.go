@@ -50,22 +50,22 @@ func run(args []string) bool {
 	args = append([]string{"test", "-v", "-count=1"}, args...)
 
 	if build.DisableVK() {
-		debug.LogI("Vulkan disabled")
+		debug.IPrintf("Vulkan disabled")
 		args = toolchain.AppendTag(args, "disable_vk")
 	}
 
 	if build.DisableGL() {
-		debug.LogI("GL disabled")
+		debug.IPrintf("GL disabled")
 		args = toolchain.AppendTag(args, "disable_gl")
 	}
 
-	debug.LogI("Testing project")
+	debug.IPrintf("Testing project")
 
 	if err := exec.Run("go", args...); err != nil {
 		panic(err)
 	}
 
-	debug.LogI("Done testing project")
+	debug.IPrintf("Done testing project")
 
 	return true
 }

@@ -37,7 +37,7 @@ func AddFlags(f *flag.FlagSet) {
 
 func DisableVK() bool {
 	if !cgodep.HaveVK() {
-		debug.LogI("Vulkan SDK not found")
+		debug.IPrintf("Vulkan SDK not found")
 		return true
 	}
 	return flagDisableVK
@@ -49,7 +49,7 @@ func DisableGL() bool {
 	// and we won't know that at init
 	_, err := toolchain.FindHeader(os.Getenv("CC"), "GL/glu.h")
 	if err != nil {
-		debug.LogI("Unable to find: %q", "GL/glu.h")
+		debug.IPrintf("Unable to find: %q", "GL/glu.h")
 		return true
 	}
 	return flagDisableGL

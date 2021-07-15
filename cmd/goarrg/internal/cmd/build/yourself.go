@@ -94,11 +94,6 @@ func init() {
 }
 
 func runYourself(args []string) bool {
-	if len(args) != 0 {
-		debug.LogE("Invalid args: %q", args)
-		return false
-	}
-
 	toolchain.Setup()
 
 	// force goarrg to install SDL2 if not already
@@ -107,11 +102,11 @@ func runYourself(args []string) bool {
 		panic(err)
 	}
 
-	tags := ""
+	args = append([]string{"build"}, args...)
 
 	if DisableVK() {
-		debug.LogI("Vulkan disabled")
-		tags += ",disable_vk"
+		debug.IPrintf("Vulkan disabled")
+		args = toolchain.AppendTag(args, "disable_vk")
 	} else {
 		// force goarrg to install vulkan if not already
 		err := os.MkdirAll(filepath.Join(cmd.ModuleDataPath(), "cgodep", "vulkan"), 0o755)
@@ -121,8 +116,8 @@ func runYourself(args []string) bool {
 	}
 
 	if DisableGL() {
-		debug.LogI("GL disabled")
-		tags += ",disable_gl"
+		debug.IPrintf("GL disabled")
+		args = toolchain.AppendTag(args, "disable_gl")
 	}
 
 	cgodep.Check()
@@ -134,7 +129,7 @@ func runYourself(args []string) bool {
 		panic(err)
 	}
 
-	debug.LogI("Building goarrg")
+	debug.IPrintf("Building goarrg")
 
 	var pkgs []string
 
@@ -151,11 +146,11 @@ func runYourself(args []string) bool {
 		}
 	}
 
-	if err := exec.Run("go", append([]string{"build", "-tags=" + tags}, pkgs...)...); err != nil {
+	if err := exec.Run("go", append(args, pkgs...)...); err != nil {
 		panic(err)
 	}
 
-	if err := exec.Run("go", append([]string{"build", "-tags=" + tags + ",debug"}, pkgs...)...); err != nil {
+	if err := exec.Run("go", append(args, pkgs...)...); err != nil {
 		panic(err)
 	}
 
@@ -164,21 +159,27 @@ func runYourself(args []string) bool {
 
 		if cmd.VeryVerbose() {
 			// we need to run with "-p=1" to get streaming test output, tho this disables parallel testing of packages
-			if err := exec.Run("go", "test", "-tags="+tags, "-v", "-count=1", "-p=1", "goarrg.com/..."); err != nil {
+			args[0] = "test"
+			args = append(args, "-v", "-count=1", "-p=1", "goarrg.com/...")
+			if err := exec.Run("go", args...); err != nil {
 				os.Exit(2)
 			}
 
-			if err := exec.Run("go", "test", "-tags="+tags+",debug", "-v", "-count=1", "-p=1", "goarrg.com/..."); err != nil {
+			args = toolchain.AppendTag(args, "debug")
+			if err := exec.Run("go", args...); err != nil {
 				os.Exit(2)
 			}
 		} else {
-			if out, err := exec.RunOutput("go", "test", "-tags="+tags, "-count=1", "-json", "goarrg.com/..."); err != nil {
-				debug.LogE("Tests failed:\n%s", parseTestFailures(out))
+			args[0] = "test"
+			args = append(args, "-count=1", "-json", "goarrg.com/...")
+			if out, err := exec.RunOutput("go", args...); err != nil {
+				debug.EPrintf("Tests failed:\n%s", parseTestFailures(out))
 				os.Exit(2)
 			}
 
-			if out, err := exec.RunOutput("go", "test", "-tags="+tags+",debug", "-count=1", "-json", "goarrg.com/..."); err != nil {
-				debug.LogE("Tests failed:\n%s", parseTestFailures(out))
+			args = toolchain.AppendTag(args, "debug")
+			if out, err := exec.RunOutput("go", args...); err != nil {
+				debug.EPrintf("Tests failed:\n%s", parseTestFailures(out))
 				os.Exit(2)
 			}
 		}
@@ -186,7 +187,7 @@ func runYourself(args []string) bool {
 		os.Setenv("GODEBUG", "")
 	}
 
-	debug.LogI("Done building goarrg")
+	debug.IPrintf("Done building goarrg")
 
 	return true
 }

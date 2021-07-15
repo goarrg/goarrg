@@ -25,12 +25,11 @@ package sdl
 	}
 */
 import "C"
+
 import (
 	"fmt"
 	"os"
 	"runtime"
-
-	"goarrg.com/debug"
 )
 
 func Popup(format string, args ...interface{}) {
@@ -38,10 +37,8 @@ func Popup(format string, args ...interface{}) {
 	defer runtime.UnlockOSThread()
 
 	err := fmt.Sprintf(format, args...)
-	debug.LogE(err)
-
 	if C.Popup(err+"\x00") != 0 {
-		debug.LogE("Failed to create popup: %s", C.GoString(C.SDL_GetError()))
+		Platform.logger.EPrintf("Failed to create popup: %s", C.GoString(C.SDL_GetError()))
 		C.SDL_ClearError()
 	}
 

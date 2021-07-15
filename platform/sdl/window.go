@@ -33,6 +33,7 @@ package sdl
 	}
 */
 import "C"
+
 import (
 	"unsafe"
 
@@ -91,7 +92,7 @@ func createWindow(flags C.uint32_t) error {
 			if C.SDL_GetDisplayBounds(0, &cRect) != 0 {
 				err := debug.Errorf(C.GoString(C.SDL_GetError()))
 				C.SDL_ClearError()
-				debug.LogE("SDL failed to create window: %s", err.Error())
+				Platform.logger.EPrintf("Failed to create window: %s", err.Error())
 			}
 
 			flags |= C.SDL_WINDOW_BORDERLESS
@@ -121,7 +122,7 @@ func createWindow(flags C.uint32_t) error {
 	if cWindow == nil {
 		err := debug.Errorf(C.GoString(C.SDL_GetError()))
 		C.SDL_ClearError()
-		debug.LogE("SDL failed to create window: %s", err.Error())
+		Platform.logger.EPrintf("Failed to create window: %s", err.Error())
 		return err
 	}
 
@@ -137,7 +138,7 @@ func createWindow(flags C.uint32_t) error {
 
 func (window *window) processEvent(e windowEvent) {
 	if (e.event & windowEventCreated) != 0 {
-		debug.LogV("[SDL] Window event created")
+		Platform.logger.VPrintf("Window event created")
 		C.SDL_ShowWindow(window.cWindow)
 		C.SDL_FlushEvent(C.SDL_WINDOWEVENT)
 
@@ -161,7 +162,7 @@ func (window *window) processEvent(e windowEvent) {
 	}
 
 	if (e.event & windowEventRectChanged) != 0 {
-		debug.LogV("[SDL] Window event rect changed")
+		Platform.logger.VPrintf("Window event rect changed")
 		cRect := C.SDL_Rect{}
 		C.SDL_GetWindowPosition(window.cWindow, &cRect.x, &cRect.y)
 		C.SDL_GetWindowSize(window.cWindow, &cRect.w, &cRect.h)
@@ -175,32 +176,32 @@ func (window *window) processEvent(e windowEvent) {
 			window.api.resize(window.rect.W, window.rect.H)
 		}
 	} else if (e.event & windowEventShown) != 0 {
-		debug.LogV("[SDL] Window event shown")
+		Platform.logger.VPrintf("Window event shown")
 		window.api.resize(window.rect.W, window.rect.H)
 	}
 
 	if (e.event & windowEventFocusGained) != 0 {
-		debug.LogV("[SDL] Window event focus gained")
+		Platform.logger.VPrintf("Window event focus gained")
 		window.keyboardFocus = true
 	}
 
 	if (e.event & windowEventFocusLost) != 0 {
-		debug.LogV("[SDL] Window event focus lost")
+		Platform.logger.VPrintf("Window event focus lost")
 		window.keyboardFocus = false
 	}
 
 	if (e.event & windowEventEnter) != 0 {
-		debug.LogV("[SDL] Window event enter")
+		Platform.logger.VPrintf(" Window event enter")
 		window.mouseFocus = true
 	}
 
 	if (e.event & windowEventLeave) != 0 {
-		debug.LogV("[SDL] Window event leave")
+		Platform.logger.VPrintf("Window event leave")
 		window.mouseFocus = false
 	}
 
 	if (e.event & windowEventHidden) != 0 {
-		debug.LogV("[SDL] Window event hidden")
+		Platform.logger.VPrintf("Window event hidden")
 		window.api.resize(0, 0)
 	}
 }
@@ -213,7 +214,7 @@ func (window *window) destroy() {
 	C.SDL_DestroyWindow(window.cWindow)
 	if err := C.GoString(C.SDL_GetError()); err != "" {
 		C.SDL_ClearError()
-		debug.LogE("SDL_DestroyWindow failed: %s", err)
+		Platform.logger.EPrintf("SDL_DestroyWindow failed: %s", err)
 	}
 }
 

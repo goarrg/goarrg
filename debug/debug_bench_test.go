@@ -20,29 +20,32 @@ package debug
 
 import (
 	"fmt"
-	"log"
 	"testing"
 )
 
 type nilWritter struct{}
 
-func (*nilWritter) Write(p []byte) (n int, err error) {
-	return len(p), nil
+func (*nilWritter) WriteString(s string) (n int, err error) {
+	return len(s), nil
 }
 
 func BenchmarkLog(b *testing.B) {
-	logOut = log.New(&nilWritter{}, "", 0).Output
-	LogSetLevel(LogLevelVerbose)
+	loggerOut = &nilWritter{}
+	logger := NewLogger()
+	logger.SetLevel(LogLevelVerbose)
 
 	for n := 0; n < b.N; n++ {
-		LogV("TEST")
+		logger.VPrint("TEST")
 	}
 }
 
 func BenchmarkLogIgnore(b *testing.B) {
-	LogSetLevel(LogLevelError)
+	loggerOut = &nilWritter{}
+	logger := NewLogger()
+	logger.SetLevel(LogLevelError)
+
 	for n := 0; n < b.N; n++ {
-		LogV("TEST")
+		logger.VPrint("TEST")
 	}
 }
 

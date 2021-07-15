@@ -116,7 +116,7 @@ func init() {
 
 func vulkanInstall(installDir string) cgoFlags {
 	if vkSDK != "" {
-		debug.LogI("${VULKAN_SDK} set to: %q", vkSDK)
+		debug.IPrintf("${VULKAN_SDK} set to: %q", vkSDK)
 		// vulkan caps the first letter on the windows SDK ... why!
 		dir := filepath.Join(vkSDK, "Include")
 		stat, err := os.Stat(dir)
@@ -149,10 +149,10 @@ func vulkanInstall(installDir string) cgoFlags {
 		}
 	}
 
-	debug.LogI("${VULKAN_SDK} unset, searching system")
+	debug.IPrintf("${VULKAN_SDK} unset, searching system")
 
 	if vkHeaders != "" {
-		debug.LogI("Found vulkan headers at: %q", vkHeaders)
+		debug.IPrintf("Found vulkan headers at: %q", vkHeaders)
 		if err := os.MkdirAll(filepath.Join(installDir, "include"), 0o755); err != nil {
 			panic(err)
 		}

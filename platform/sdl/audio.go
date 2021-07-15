@@ -25,6 +25,7 @@ package sdl
 	}
 */
 import "C"
+
 import (
 	"reflect"
 	"unsafe"
@@ -275,7 +276,7 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 	}
 
 	if mixer == nil {
-		debug.LogI("SDL audio disabled")
+		Platform.logger.IPrintf("SDL audio disabled")
 		return nil
 	}
 
@@ -339,7 +340,7 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 
 	C.SDL_PauseAudioDevice(cAID, 0)
 
-	debug.LogI("SDL initialized audio device with config: %+v", cfg)
+	Platform.logger.IPrintf("Initialized audio device with config: %+v", cfg)
 	return nil
 }
 

@@ -84,7 +84,7 @@ func cleanDir(dir string) {
 
 	for _, entry := range entries {
 		entry := filepath.Join(dir, entry.Name())
-		debug.LogV("Removing: %q", entry)
+		debug.VPrintf("Removing: %q", entry)
 		if err := os.RemoveAll(entry); err != nil {
 			panic(debug.ErrorWrapf(err, "Failed to remove: %q", entry))
 		}
@@ -100,7 +100,7 @@ func cleanDirFiltered(dir string, filter func(string, os.DirEntry) bool) {
 	for _, entry := range entries {
 		target := filepath.Join(dir, entry.Name())
 		if filter(target, entry) {
-			debug.LogV("Removing: %q", target)
+			debug.VPrintf("Removing: %q", target)
 			if err := os.RemoveAll(target); err != nil {
 				panic(debug.ErrorWrapf(err, "Failed to remove: %q", target))
 			}
@@ -115,11 +115,11 @@ func install(name string) {
 	}
 
 	if !toolchain.CgoSupported() {
-		debug.LogE("%q is not available on target: %q: cgo unsupported", name, toolchain.Target())
+		debug.EPrintf("%q is not available on target: %q: cgo unsupported", name, toolchain.Target())
 		os.Exit(2)
 	}
 
-	debug.LogI("Installing: %q", name)
+	debug.IPrintf("Installing: %q", name)
 
 	dir := cgoDepPath(name)
 	if cgoDeps[name].targetSpecific {
@@ -147,7 +147,7 @@ func install(name string) {
 		}
 	}
 
-	debug.LogI("Installed: %q", name)
+	debug.IPrintf("Installed: %q", name)
 }
 
 func List() []Dep {
@@ -173,14 +173,14 @@ func List() []Dep {
 
 func Check() {
 	if !toolchain.CgoSupported() {
-		debug.LogI("Cgo unsupported, skipping C dependencies check")
+		debug.IPrintf("Cgo unsupported, skipping C dependencies check")
 		return
 	}
 
-	debug.LogI("Checking installed cgo dependencies")
+	debug.IPrintf("Checking installed cgo dependencies")
 	installed := false
 	for name, d := range cgoDeps {
-		debug.LogI("Checking for: %q", name)
+		debug.IPrintf("Checking for: %q", name)
 
 		dir := cgoDepPath(name)
 		if cgoDeps[name].targetSpecific {
@@ -194,7 +194,7 @@ func Check() {
 					panic(debug.ErrorWrapf(err, "Unknown error reading: %q", dir))
 				}
 
-				debug.LogI("%q not found", name)
+				debug.IPrintf("%q not found", name)
 				continue
 			}
 
@@ -216,7 +216,7 @@ func Check() {
 				install(d.name)
 				installed = true
 			} else {
-				debug.LogI("%q is up to date", name)
+				debug.IPrintf("%q is up to date", name)
 			}
 		}
 	}
@@ -232,7 +232,7 @@ func Check() {
 }
 
 func Clean() {
-	debug.LogI("Cleaning installed cgo dependencies")
+	debug.IPrintf("Cleaning installed cgo dependencies")
 	cleanDirFiltered(filepath.Join(cmd.ModuleDataPath(), "cgodep"), func(target string, entry os.DirEntry) bool {
 		if entry.Name() == "cache" {
 			return false
@@ -241,7 +241,7 @@ func Clean() {
 			return true
 		}
 
-		debug.LogI("Cleaning: %q", target)
+		debug.IPrintf("Cleaning: %q", target)
 		cleanDirFiltered(target, func(target string, entry os.DirEntry) bool {
 			if entry.IsDir() && toolchain.ValidPlatform(entry.Name()) {
 				cleanDir(target)

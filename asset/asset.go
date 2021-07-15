@@ -42,15 +42,16 @@ type asset struct {
 }
 
 var (
-	cache = make(map[string]asset)
-	mtx   = sync.RWMutex{}
+	cache  = make(map[string]asset)
+	mtx    = sync.RWMutex{}
+	logger = debug.NewLogger("goarrg", "asset")
 )
 
 func Load(file string) (Asset, error) {
 	mtx.RLock()
 
 	if a, ok := cache[file]; ok {
-		debug.LogV("Loading asset [%s] from cache", file)
+		logger.VPrintf("Loading [%s] from cache", file)
 		atomic.AddInt64(a.refs, 1)
 		mtx.RUnlock()
 		runtime.SetFinalizer(&a, (*asset).close)
@@ -63,13 +64,13 @@ func Load(file string) (Asset, error) {
 
 	// be 100% sure it wasn't added between the RUnlock() and Lock()
 	if a, ok := cache[file]; ok {
-		debug.LogV("Loading asset [%s] from cache", file)
+		logger.VPrintf("Loading [%s] from cache", file)
 		atomic.AddInt64(a.refs, 1)
 		runtime.SetFinalizer(&a, (*asset).close)
 		return &a, nil
 	}
 
-	debug.LogV("Loading asset [%s] from disk", file)
+	logger.VPrintf("Loading [%s] from disk", file)
 	f, err := mapFile(file)
 	if err != nil {
 		return nil, debug.ErrorWrapf(err, "Failed to load asset %q", file)
@@ -105,7 +106,7 @@ func (a *asset) close() {
 		defer mtx.Unlock()
 
 		if a, ok := cache[a.file.name]; ok {
-			debug.LogV("Removing asset [%s] from cache", a.file.name)
+			logger.VPrintf("Removing [%s] from cache", a.file.name)
 			delete(cache, a.file.name)
 			a.file.close()
 		}

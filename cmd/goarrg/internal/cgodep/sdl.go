@@ -110,7 +110,7 @@ func init() {
 func sdlInstall(installDir string) cgoFlags {
 	cgoFlags, ok := sdlCgoFlags[toolchain.TargetOS()]
 	if !ok {
-		debug.LogE("sdl2 is not available on target: %q\nRun %q to see available targets", toolchain.Target(), "go run goarrg.com/cmd/goarrg install sdl2 -h")
+		debug.EPrintf("sdl2 is not available on target: %q\nRun %q to see available targets", toolchain.Target(), "go run goarrg.com/cmd/goarrg install sdl2 -h")
 		os.Exit(2)
 	}
 
@@ -131,7 +131,7 @@ func sdlInstall(installDir string) cgoFlags {
 
 	defer os.RemoveAll(srcDir)
 
-	debug.LogV("Extracting SDL2")
+	debug.VPrintf("Extracting SDL2")
 
 	if err := extractTARGZ(bytes.NewReader(data), srcDir); err != nil {
 		panic(debug.ErrorWrapf(err, "Failed to extract SDL2"))

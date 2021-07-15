@@ -56,6 +56,7 @@ const (
 )
 
 var system struct {
+	logger   *debug.Logger
 	platform Platform
 	audio    Audio
 	renderer Renderer
@@ -66,9 +67,10 @@ var system struct {
 
 func Run(cfg Config) error {
 	start := time.Now()
-	debug.LogV("Initializing engine")
+	system.logger = debug.NewLogger("goarrg")
+	system.logger.IPrintf("Initializing engine")
 
-	defer debug.LogV("Engine terminated")
+	defer system.logger.IPrintf("Engine terminated")
 	defer trace.Shutdown()
 	defer atomic.StoreInt32(&system.state, stateTerminated)
 
@@ -125,11 +127,11 @@ func Run(cfg Config) error {
 
 	go func() {
 		if <-c == nil {
-			debug.LogV("Engine closed signal handler")
+			system.logger.IPrintf("Engine closed signal handler")
 			return
 		}
 
-		debug.LogV("Engine signaled to force shutdown")
+		system.logger.IPrintf("Engine signaled to force shutdown")
 		atomic.StoreInt32(&system.state, stateShutdownConfirmed)
 
 		time.AfterFunc(time.Second, func() {
@@ -140,7 +142,7 @@ func Run(cfg Config) error {
 	}()
 
 	atomic.StoreInt32(&system.state, stateRunning)
-	debug.LogV("Engine Init took: %v", time.Since(start))
+	system.logger.IPrintf("Engine Init took: %v", time.Since(start))
 
 	deltaTime := float64(0.0)
 
@@ -173,7 +175,7 @@ loop:
 	if !system.program.Shutdown() {
 		t.Stop()
 		atomic.StoreInt32(&system.state, stateRunning)
-		debug.LogV("Engine canceled shutdown")
+		system.logger.IPrintf("Engine canceled shutdown")
 		goto loop
 	}
 
@@ -202,6 +204,6 @@ func Running() bool {
 */
 func Shutdown() {
 	if atomic.CompareAndSwapInt32(&system.state, stateRunning, stateShutdown) {
-		debug.LogV("Engine signaled to shutdown")
+		system.logger.IPrintf("Engine signaled to shutdown")
 	}
 }

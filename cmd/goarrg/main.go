@@ -50,7 +50,7 @@ func main() {
 	} else if os.Args[1] == "-h" {
 		help()
 	} else {
-		debug.LogE("Invalid command %q", os.Args[1])
+		debug.EPrintf("Invalid command %q", os.Args[1])
 		help()
 		os.Exit(2)
 	}

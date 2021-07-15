@@ -23,6 +23,7 @@ package sdl
 	#include <SDL2/SDL.h>
 */
 import "C"
+
 import (
 	"goarrg.com"
 	"goarrg.com/debug"
@@ -47,11 +48,11 @@ type glWindow struct {
 }
 
 func glInit(r goarrg.GLRenderer) error {
-	debug.LogV("SDL creating gl Window")
+	Platform.logger.IPrintf("Creating gl Window")
 
 	if r == nil {
 		err := debug.Errorf("Invalid renderer")
-		debug.LogE("SDL failed to create window: Invalid renderer")
+		Platform.logger.EPrintf("Failed to create window: Invalid renderer")
 		return err
 	}
 
@@ -86,10 +87,10 @@ func glInit(r goarrg.GLRenderer) error {
 
 	switch {
 	case C.SDL_GL_SetSwapInterval(-1) == 0:
-		debug.LogI("vsync set to late swap tearing")
+		Platform.logger.IPrintf("vsync set to late swap tearing")
 	case C.SDL_GL_SetSwapInterval(1) == 0:
 		C.SDL_ClearError()
-		debug.LogI("vsync enabled")
+		Platform.logger.IPrintf("vsync enabled")
 	default:
 		err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to enable vsync")
 		C.SDL_ClearError()
@@ -101,7 +102,7 @@ func glInit(r goarrg.GLRenderer) error {
 	}
 
 	Platform.display.mainWindow.api.resize(Platform.config.Window.Rect.W, Platform.config.Window.Rect.H)
-	debug.LogV("SDL created gl window")
+	Platform.logger.IPrintf("Created gl window")
 
 	return nil
 }

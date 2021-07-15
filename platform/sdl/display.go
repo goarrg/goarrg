@@ -30,18 +30,11 @@ func (*platform) DisplayInit(renderer goarrg.Renderer) error {
 	if vk, ok := renderer.(goarrg.VkRenderer); ok {
 		if err := vkInit(vk); err != nil {
 			if gl, ok := renderer.(goarrg.GLRenderer); ok {
-				debug.LogI("SDL failed to init vk renderer %v", err)
-				debug.LogI("SDL falling back to gl renderer")
+				Platform.logger.IPrintf("Failed to init vk renderer %v", err)
+				Platform.logger.IPrintf("Falling back to gl renderer")
 
-				if err := glInit(gl); err != nil {
-					Popup("Platform display init failed: %s", err.Error())
-					return err
-				}
-
-				return nil
+				return glInit(gl)
 			}
-
-			Popup("Platform display init failed: %s", err.Error())
 			return err
 		}
 
@@ -50,16 +43,13 @@ func (*platform) DisplayInit(renderer goarrg.Renderer) error {
 
 	if gl, ok := renderer.(goarrg.GLRenderer); ok {
 		if err := glInit(gl); err != nil {
-			Popup("Platform display init failed: %s", err.Error())
 			return err
 		}
 
 		return nil
 	}
 
-	err := debug.Errorf("Invalid renderer")
-	Popup("Platform display init failed: %s", err.Error())
-	return err
+	return debug.Errorf("Invalid renderer")
 }
 
 func (d *displaySystem) hasKeyboardFocus() bool {

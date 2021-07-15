@@ -35,7 +35,6 @@ type file struct {
 
 func mapFile(f string) (file, error) {
 	info, err := os.Stat(f)
-
 	if err != nil {
 		return file{}, debug.ErrorWrapf(err, "Failed to map file")
 	}
@@ -49,13 +48,11 @@ func mapFile(f string) (file, error) {
 	}
 
 	fd, err := unix.Open(f, unix.O_RDONLY, 0)
-
 	if err != nil {
 		return file{}, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
 	data, err := unix.Mmap(fd, 0, int(info.Size()), unix.PROT_READ, unix.MAP_SHARED)
-
 	if err != nil {
 		unix.Close(fd)
 		return file{}, debug.ErrorWrapf(err, "Failed to map file")
@@ -70,6 +67,8 @@ func mapFile(f string) (file, error) {
 }
 
 func (f *file) close() {
-	debug.LogErr(debug.ErrorWrapf(unix.Munmap(f.data), "Failed to unmap file"))
+	if err := debug.ErrorWrapf(unix.Munmap(f.data), "Failed to unmap file"); err != nil {
+		panic(err)
+	}
 	unix.Close(f.fd)
 }

@@ -29,6 +29,7 @@ package sdl
 	}
 */
 import "C"
+
 import (
 	"runtime"
 	"sync"
@@ -38,6 +39,7 @@ import (
 )
 
 type platform struct {
+	logger  *debug.Logger
 	config  Config
 	audio   audioSystem
 	display displaySystem
@@ -45,7 +47,7 @@ type platform struct {
 }
 
 var (
-	Platform = &platform{}
+	Platform = &platform{logger: debug.NewLogger("sdl")}
 	initOnce = sync.Once{}
 )
 
@@ -57,7 +59,7 @@ func (*platform) Init() error {
 	err := debug.Errorf("Init must be called only once")
 
 	initOnce.Do(func() {
-		debug.LogV("Platform initializing")
+		Platform.logger.IPrintf("Platform initializing")
 
 		C.SDL_EventState(C.SDL_KEYDOWN, C.SDL_DISABLE)
 		C.SDL_EventState(C.SDL_KEYUP, C.SDL_DISABLE)
@@ -72,14 +74,13 @@ func (*platform) Init() error {
 		if C.SDL_Init(C.SDL_INIT_VIDEO) != 0 {
 			err = debug.Errorf(C.GoString(C.SDL_GetError()))
 			C.SDL_ClearError()
-			Popup("Platform init failed: %s", err.Error())
 			return
 		}
 
 		Platform.input.init()
 
 		err = nil
-		debug.LogV("Platform initialized")
+		Platform.logger.IPrintf("Platform initialized")
 	})
 
 	return err

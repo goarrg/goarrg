@@ -47,7 +47,7 @@ func init() {
 
 func Run(args []string) bool {
 	if !cmd.PackageMain() {
-		debug.LogE("Current directory is not a package main")
+		debug.EPrintf("Current directory is not a package main")
 		os.Exit(2)
 	}
 
@@ -57,22 +57,22 @@ func Run(args []string) bool {
 	args = append([]string{"build"}, args...)
 
 	if DisableVK() {
-		debug.LogI("Vulkan disabled")
+		debug.IPrintf("Vulkan disabled")
 		args = toolchain.AppendTag(args, "disable_vk")
 	}
 
 	if DisableGL() {
-		debug.LogI("GL disabled")
+		debug.IPrintf("GL disabled")
 		args = toolchain.AppendTag(args, "disable_gl")
 	}
 
-	debug.LogI("Building project")
+	debug.IPrintf("Building project")
 
 	if err := exec.Run("go", args...); err != nil {
 		panic(err)
 	}
 
-	debug.LogI("Done building project")
+	debug.IPrintf("Done building project")
 
 	return true
 }

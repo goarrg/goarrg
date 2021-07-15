@@ -49,7 +49,7 @@ func init() {
 
 func run(args []string) bool {
 	if !cmd.PackageMain() {
-		debug.LogE("Current directory is not a package main")
+		debug.EPrintf("Current directory is not a package main")
 		os.Exit(2)
 	}
 
@@ -79,7 +79,7 @@ func run(args []string) bool {
 		os.Exit(ret)
 	}
 
-	debug.LogI("Done running project")
+	debug.IPrintf("Done running project")
 
 	return true
 }

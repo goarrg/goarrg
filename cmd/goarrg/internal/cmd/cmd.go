@@ -102,11 +102,11 @@ func (cmd *CMD) Exec(args []string) {
 
 	switch {
 	case flagVeryVerbose:
-		debug.LogSetLevel(debug.LogLevelVerbose)
+		debug.SetLevel(debug.LogLevelVerbose)
 	case flagVerbose:
-		debug.LogSetLevel(debug.LogLevelInfo)
+		debug.SetLevel(debug.LogLevelInfo)
 	default:
-		debug.LogSetLevel(debug.LogLevelWarn)
+		debug.SetLevel(debug.LogLevelWarn)
 	}
 
 	if !cmd.Run(cmd.Flags.Args()) {

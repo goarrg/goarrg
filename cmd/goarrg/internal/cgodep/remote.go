@@ -42,13 +42,13 @@ func get(url string, fileName string, verify func([]byte) error) ([]byte, error)
 			return nil, debug.ErrorWrapf(err, "Failed to read cached file: %q", fileName)
 		}
 	} else {
-		debug.LogV("Verifying cached file: %q", fileName)
+		debug.VPrintf("Verifying cached file: %q", fileName)
 		if err := verify(data); err == nil {
 			return data, nil
 		}
 	}
 
-	debug.LogV("Downloading: %q", url)
+	debug.VPrintf("Downloading: %q", url)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -66,13 +66,13 @@ func get(url string, fileName string, verify func([]byte) error) ([]byte, error)
 		return nil, debug.ErrorWrapf(err, "Failed to get: %q", url)
 	}
 
-	debug.LogV("Verifying downloaded data")
+	debug.VPrintf("Verifying downloaded data")
 
 	if err := verify(data); err != nil {
 		return nil, debug.ErrorWrapf(err, "Failed to verify downloaded data")
 	}
 
-	debug.LogV("Writing to: %q", fileName)
+	debug.VPrintf("Writing to: %q", fileName)
 
 	if err := os.WriteFile(fileName, data, 0o644); err != nil {
 		return nil, debug.ErrorWrapf(err, "Failed to write file: %q", fileName)
