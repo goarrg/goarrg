@@ -28,7 +28,6 @@ import "C"
 
 import (
 	"fmt"
-	"os"
 	"runtime"
 )
 
@@ -41,6 +40,4 @@ func Popup(format string, args ...interface{}) {
 		Platform.logger.EPrintf("Failed to create popup: %s", C.GoString(C.SDL_GetError()))
 		C.SDL_ClearError()
 	}
-
-	os.Exit(1)
 }
