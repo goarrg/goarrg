@@ -44,7 +44,7 @@ func (vk *vkInstance) ProcAddr() uintptr {
 	return vk.procAddr
 }
 
-func (vk *vkInstance) Ptr() uintptr {
+func (vk *vkInstance) Uintptr() uintptr {
 	return vk.ptr
 }
 
