@@ -54,7 +54,7 @@ type VkConfig struct {
 }
 
 type VkInstance interface {
-	Ptr() uintptr
+	Uintptr() uintptr
 	ProcAddr() uintptr
 	Surface() uintptr
 }
