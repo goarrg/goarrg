@@ -23,6 +23,7 @@ import (
 	"goarrg.com/cmd/goarrg/internal/cmd"
 	"goarrg.com/cmd/goarrg/internal/cmd/build"
 	"goarrg.com/cmd/goarrg/internal/exec"
+	"goarrg.com/cmd/goarrg/internal/toolchain"
 	"goarrg.com/debug"
 )
 
@@ -45,6 +46,7 @@ var CMD = &cmd.CMD{
 
 func init() {
 	build.AddFlags(&CMD.Flags)
+	toolchain.AddFlags(&CMD.Flags)
 }
 
 func run(args []string) bool {
