@@ -219,5 +219,5 @@ func (window *window) destroy() {
 }
 
 func SetWindowTitle(title string) {
-	C.setWindowTitle(Platform.display.mainWindow.cWindow, title)
+	C.setWindowTitle(Platform.display.mainWindow.cWindow, title+"\x00")
 }
