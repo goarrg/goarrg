@@ -43,6 +43,7 @@ var cmds = map[string]*cmd.CMD{
 func main() {
 	if len(os.Args) < 2 {
 		help()
+		os.Exit(2)
 	}
 
 	if cmd, ok := cmds[os.Args[1]]; ok {
