@@ -191,7 +191,7 @@ func (window *window) processEvent(e windowEvent) {
 	}
 
 	if (e.event & windowEventEnter) != 0 {
-		Platform.logger.VPrintf(" Window event enter")
+		Platform.logger.VPrintf("Window event enter")
 		window.mouseFocus = true
 	}
 
