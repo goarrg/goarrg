@@ -38,7 +38,7 @@ func TestLookAt(t *testing.T) {
 		}
 
 		tr := Transform{Pos: p1}
-		tr.LookAt(p2)
+		tr.LookAt(Vector3f64{Y: 1}, p2)
 
 		f := tr.TransformDirection(Vector3f64{Z: 1})
 		d := p1.VectorTo(p2).Normalize()
@@ -54,6 +54,6 @@ func BenchmarkLookAt(b *testing.B) {
 	t := Transform{}
 
 	for i := 0; i < b.N; i++ {
-		t.LookAt(Point3f64{})
+		t.LookAt(Vector3f64{Y: 1}, Point3f64{})
 	}
 }

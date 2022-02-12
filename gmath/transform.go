@@ -38,12 +38,8 @@ func (t *Transform) TransformDirection(v Vector3f64) Vector3f64 {
 	return t.Rot.Rotate(v)
 }
 
-func (t *Transform) LookAt(target Point3f64) {
-	up := Vector3f64{Y: 1}
+func (t *Transform) LookAt(up Vector3f64, target Point3f64) {
 	m2 := t.Pos.VectorTo(target).Normalize()
-	if (m2 == Vector3f64{Y: 1}) || (m2 == Vector3f64{Y: -1}) {
-		up = Vector3f64{Z: -m2.Y}
-	}
 	m0 := up.Cross(m2).Normalize()
 	m1 := m2.Cross(m0)
 	if trace := m0.X + m1.Y + m2.Z; trace > 0 {
