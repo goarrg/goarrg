@@ -1,4 +1,5 @@
-//+build !disable_gl
+//go:build !disable_gl
+// +build !disable_gl
 
 /*
 Copyright 2020 The goARRG Authors.

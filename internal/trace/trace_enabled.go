@@ -1,4 +1,5 @@
-//+build debug
+//go:build debug
+// +build debug
 
 /*
 Copyright 2020 The goARRG Authors.
@@ -24,14 +25,15 @@ import (
 	"runtime/trace"
 )
 
-var traceCtx context.Context
-var traceTask *trace.Task
-var out *os.File
+var (
+	traceCtx  context.Context
+	traceTask *trace.Task
+	out       *os.File
+)
 
 func init() {
 	if !trace.IsEnabled() {
 		file, err := os.Create("out.trace")
-
 		if err != nil {
 			panic(err)
 		}
