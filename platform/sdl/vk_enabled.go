@@ -20,7 +20,7 @@ limitations under the License.
 package sdl
 
 /*
-	#cgo pkg-config: sdl2 vulkan
+	#cgo pkg-config: sdl2
 
 	#include "vk.h"
 */
@@ -201,10 +201,9 @@ func vkInit(r goarrg.VkRenderer) error {
 			defer C.free(unsafe.Pointer(layers[i]))
 		}
 
-		cVkAInfo := (*C.VkApplicationInfo)(C.calloc(1, C.size_t(unsafe.Sizeof(C.VkApplicationInfo{}))))
-		defer C.free(unsafe.Pointer(cVkAInfo))
-
-		cVkAInfo.sType = C.VK_STRUCTURE_TYPE_APPLICATION_INFO
+		cVkAInfo := C.VkApplicationInfo{
+			sType: C.VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		}
 
 		if vkCfg.API != 0 {
 			cVkAInfo.apiVersion = C.uint32_t(vkCfg.API)
@@ -214,7 +213,6 @@ func vkInit(r goarrg.VkRenderer) error {
 
 		cVkCInfo := C.VkInstanceCreateInfo{
 			sType:                   C.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-			pApplicationInfo:        cVkAInfo,
 			enabledLayerCount:       C.uint32_t(len(vkCfg.Layers)),
 			ppEnabledLayerNames:     cLayers,
 			enabledExtensionCount:   cNumSDLExt + C.uint32_t(len(vkCfg.Extensions)),
@@ -222,7 +220,7 @@ func vkInit(r goarrg.VkRenderer) error {
 		}
 
 		//nolint:staticcheck
-		if ret := C.vkCreateInstance(&cVkCInfo, nil, &cInstance); ret != C.VK_SUCCESS {
+		if ret := C.vkCreateInstance(cVkAInfo, cVkCInfo, &cInstance); ret != C.VK_SUCCESS {
 			for i := 0; i < int(cNumSDLExt); i++ {
 				vkCfg.Extensions = append(vkCfg.Extensions, C.GoString(ext[i]))
 			}
@@ -236,7 +234,7 @@ func vkInit(r goarrg.VkRenderer) error {
 
 		//nolint:staticcheck
 		if C.SDL_Vulkan_CreateSurface(Platform.display.mainWindow.cWindow, cInstance, &cSurface) != C.SDL_TRUE {
-			C.vkDestroyInstance(cInstance, nil)
+			C.vkDestroyInstance(cInstance)
 			err := debug.Errorf(C.GoString(C.SDL_GetError()))
 			C.SDL_ClearError()
 			return err
@@ -248,8 +246,8 @@ func vkInit(r goarrg.VkRenderer) error {
 		ptr:      uintptr(unsafe.Pointer(cInstance)),
 		surface:  uintptr(unsafe.Pointer(cSurface)),
 	}); err != nil {
-		C.vkDestroySurface(cInstance, cSurface, nil)
-		C.vkDestroyInstance(cInstance, nil)
+		C.vkDestroySurface(cInstance, cSurface)
+		C.vkDestroyInstance(cInstance)
 		return err
 	}
 
@@ -280,6 +278,6 @@ func (vkw *vkWindow) resize(w int, h int) {
 }
 
 func (vkw *vkWindow) destroy() {
-	C.vkDestroySurface(vkw.cInstance, vkw.cSurface, nil)
-	C.vkDestroyInstance(vkw.cInstance, nil)
+	C.vkDestroySurface(vkw.cInstance, vkw.cSurface)
+	C.vkDestroyInstance(vkw.cInstance)
 }

@@ -19,8 +19,33 @@ limitations under the License.
 
 #include "vk.h"
 
-VkResult vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo,
-						  const VkAllocationCallbacks* pAllocator,
+#if defined(_WIN32)
+#define VKAPI_PTR __stdcall
+#else
+#define VKAPI_PTR
+#endif
+
+typedef struct VkAllocationCallbacks {
+} VkAllocationCallbacks;
+
+typedef void(VKAPI_PTR* PFN_vkVoidFunction)(void);
+typedef PFN_vkVoidFunction(VKAPI_PTR* PFN_vkGetInstanceProcAddr)(
+	VkInstance instance,
+	const char* pName);
+typedef VkResult(VKAPI_PTR* PFN_vkCreateInstance)(
+	const VkInstanceCreateInfo* pCreateInfo,
+	const VkAllocationCallbacks* pAllocator,
+	VkInstance* pInstance);
+typedef void(VKAPI_PTR* PFN_vkDestroySurfaceKHR)(
+	VkInstance instance,
+	VkSurfaceKHR surface,
+	const VkAllocationCallbacks* pAllocator);
+typedef void(VKAPI_PTR* PFN_vkDestroyInstance)(
+	VkInstance instance,
+	const VkAllocationCallbacks* pAllocator);
+
+VkResult vkCreateInstance(VkApplicationInfo appInfo,
+						  VkInstanceCreateInfo createInfo,
 						  VkInstance* pInstance) {
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
 		(PFN_vkGetInstanceProcAddr)SDL_Vulkan_GetVkGetInstanceProcAddr();
@@ -36,12 +61,11 @@ VkResult vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo,
 		return VK_ERROR_INVALID_EXTERNAL_HANDLE;
 	}
 
-	return vkCreateInstance(pCreateInfo, pAllocator, pInstance);
+	createInfo.pApplicationInfo = &appInfo;
+	return vkCreateInstance(&createInfo, NULL, pInstance);
 }
 
-void vkDestroySurface(VkInstance instance,
-					  VkSurfaceKHR surface,
-					  const VkAllocationCallbacks* pAllocator) {
+void vkDestroySurface(VkInstance instance, VkSurfaceKHR surface) {
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
 		(PFN_vkGetInstanceProcAddr)SDL_Vulkan_GetVkGetInstanceProcAddr();
 
@@ -57,11 +81,10 @@ void vkDestroySurface(VkInstance instance,
 		return;
 	}
 
-	vkDestroySurfaceKHR(instance, surface, pAllocator);
+	vkDestroySurfaceKHR(instance, surface, NULL);
 }
 
-void vkDestroyInstance(VkInstance instance,
-					   const VkAllocationCallbacks* pAllocator) {
+void vkDestroyInstance(VkInstance instance) {
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
 		(PFN_vkGetInstanceProcAddr)SDL_Vulkan_GetVkGetInstanceProcAddr();
 
@@ -76,5 +99,5 @@ void vkDestroyInstance(VkInstance instance,
 		return;
 	}
 
-	vkDestroyInstance(instance, pAllocator);
+	vkDestroyInstance(instance, NULL);
 }
