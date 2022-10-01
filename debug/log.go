@@ -159,11 +159,18 @@ func (l *Logger) NewLoggerWithTags(tags ...string) *Logger {
 	return &newLogger
 }
 
-func (l *Logger) messageHeader(level string) string {
+func (l *Logger) write(level, msg string) {
 	t := time.Now()
 	hour, min, sec := t.Clock()
 
-	return fmt.Sprintf("%02d:%02d:%02d.%06d %-10s%s", hour, min, sec, t.Nanosecond()/int(time.Microsecond), "["+level+"]", l.tags)
+	msg = fmt.Sprintf("%02d:%02d:%02d.%06d %-10s%s%s\n",
+		hour, min, sec, t.Nanosecond()/int(time.Microsecond), "["+level+"]", l.tags,
+		msg)
+
+	loggerMtx.Lock()
+	defer loggerMtx.Unlock()
+
+	_, _ = loggerOut.WriteString(msg)
 }
 
 func (l *Logger) VPrint(args ...interface{}) {
@@ -171,12 +178,7 @@ func (l *Logger) VPrint(args ...interface{}) {
 		return
 	}
 
-	msg := fmt.Sprintf("%s%s\n", l.messageHeader("VERBOSE"), fmt.Sprint(args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	l.write("VERBOSE", fmt.Sprint(args...))
 }
 
 func (l *Logger) IPrint(args ...interface{}) {
@@ -184,12 +186,7 @@ func (l *Logger) IPrint(args ...interface{}) {
 		return
 	}
 
-	msg := fmt.Sprintf("%s%s\n", l.messageHeader("INFO"), fmt.Sprint(args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	l.write("INFO", fmt.Sprint(args...))
 }
 
 func (l *Logger) WPrint(args ...interface{}) {
@@ -197,21 +194,11 @@ func (l *Logger) WPrint(args ...interface{}) {
 		return
 	}
 
-	msg := fmt.Sprintf("%s%s\n", l.messageHeader("WARN"), fmt.Sprint(args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	l.write("WARN", fmt.Sprint(args...))
 }
 
 func (l *Logger) EPrint(args ...interface{}) {
-	msg := fmt.Sprintf("%s%s\n", l.messageHeader("ERROR"), fmt.Sprint(args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	l.write("ERROR", fmt.Sprint(args...))
 }
 
 func (l *Logger) VPrintln(args ...interface{}) {
@@ -219,12 +206,8 @@ func (l *Logger) VPrintln(args ...interface{}) {
 		return
 	}
 
-	msg := fmt.Sprintf("%s%s", l.messageHeader("VERBOSE"), fmt.Sprintln(args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	msg := fmt.Sprintln(args...)
+	l.write("VERBOSE", msg[:len(msg)-1])
 }
 
 func (l *Logger) IPrintln(args ...interface{}) {
@@ -232,12 +215,8 @@ func (l *Logger) IPrintln(args ...interface{}) {
 		return
 	}
 
-	msg := fmt.Sprintf("%s%s", l.messageHeader("INFO"), fmt.Sprintln(args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	msg := fmt.Sprintln(args...)
+	l.write("INFO", msg[:len(msg)-1])
 }
 
 func (l *Logger) WPrintln(args ...interface{}) {
@@ -245,21 +224,13 @@ func (l *Logger) WPrintln(args ...interface{}) {
 		return
 	}
 
-	msg := fmt.Sprintf("%s%s", l.messageHeader("WARN"), fmt.Sprintln(args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	msg := fmt.Sprintln(args...)
+	l.write("WARN", msg[:len(msg)-1])
 }
 
 func (l *Logger) EPrintln(args ...interface{}) {
-	msg := fmt.Sprintf("%s%s", l.messageHeader("ERROR"), fmt.Sprintln(args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	msg := fmt.Sprintln(args...)
+	l.write("ERROR", msg[:len(msg)-1])
 }
 
 func (l *Logger) VPrintf(format string, args ...interface{}) {
@@ -267,12 +238,7 @@ func (l *Logger) VPrintf(format string, args ...interface{}) {
 		return
 	}
 
-	msg := fmt.Sprintf("%s%s\n", l.messageHeader("VERBOSE"), fmt.Sprintf(format, args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	l.write("VERBOSE", fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) IPrintf(format string, args ...interface{}) {
@@ -280,12 +246,7 @@ func (l *Logger) IPrintf(format string, args ...interface{}) {
 		return
 	}
 
-	msg := fmt.Sprintf("%s%s\n", l.messageHeader("INFO"), fmt.Sprintf(format, args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	l.write("INFO", fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) WPrintf(format string, args ...interface{}) {
@@ -293,19 +254,9 @@ func (l *Logger) WPrintf(format string, args ...interface{}) {
 		return
 	}
 
-	msg := fmt.Sprintf("%s%s\n", l.messageHeader("WARN"), fmt.Sprintf(format, args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	l.write("WARN", fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) EPrintf(format string, args ...interface{}) {
-	msg := fmt.Sprintf("%s%s\n", l.messageHeader("ERROR"), fmt.Sprintf(format, args...))
-
-	loggerMtx.Lock()
-	defer loggerMtx.Unlock()
-
-	_, _ = loggerOut.WriteString(msg)
+	l.write("ERROR", fmt.Sprintf(format, args...))
 }
