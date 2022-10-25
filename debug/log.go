@@ -54,7 +54,7 @@ func NewLogger(tags ...string) *Logger {
 }
 
 /*
-	SetLevel sets the global log level.
+SetLevel sets the global log level.
 */
 func SetLevel(level uint32) {
 	if level < LogLevelVerbose || level > LogLevelError {
@@ -64,8 +64,8 @@ func SetLevel(level uint32) {
 }
 
 /*
-	WillLog reports whether logging at the given level would have an effect,
-	based on the global log level.
+WillLog reports whether logging at the given level would have an effect,
+based on the global log level.
 */
 func WillLog(level uint32) bool {
 	return atomic.LoadUint32(logger.level) <= level
@@ -120,8 +120,8 @@ func EPrintf(format string, args ...interface{}) {
 }
 
 /*
-	SetLevel sets the current logger's level, if the logger's level is
-	LogLevelGlobal, it will use the global log level.
+SetLevel sets the current logger's level, if the logger's level is
+LogLevelGlobal, it will use the global log level.
 */
 func (l *Logger) SetLevel(level uint32) {
 	if level > LogLevelError {
@@ -131,8 +131,8 @@ func (l *Logger) SetLevel(level uint32) {
 }
 
 /*
-	WillLog reports whether logging at the given level would have an effect. If
-	the logger's level is LogLevelGlobal, it will check against the global log level.
+WillLog reports whether logging at the given level would have an effect. If
+the logger's level is LogLevelGlobal, it will check against the global log level.
 */
 func (l *Logger) WillLog(level uint32) bool {
 	logLevel := atomic.LoadUint32(l.level)
@@ -143,8 +143,8 @@ func (l *Logger) WillLog(level uint32) bool {
 }
 
 /*
-	NewLoggerWithTags creates a new logger with tags appended to the
-	current logger's tag list.
+NewLoggerWithTags creates a new logger with tags appended to the
+current logger's tag list.
 */
 func (l *Logger) NewLoggerWithTags(tags ...string) *Logger {
 	newLogger := Logger{

@@ -185,13 +185,13 @@ loop:
 }
 
 /*
-	Running reports whether the engine is considered to still be running.
-	It will only return true when the main loop is running and before shutdown
-	confirmation from Program.Shutdown(). This is so that you can depend on
-	Running() to terminate your loops/threads.
+Running reports whether the engine is considered to still be running.
+It will only return true when the main loop is running and before shutdown
+confirmation from Program.Shutdown(). This is so that you can depend on
+Running() to terminate your loops/threads.
 
-	SIGINT will bypass Program.Shutdown() and force a terminate. This is so we
-	have a easy way to terminate the engine in the event of deadlocks.
+SIGINT will bypass Program.Shutdown() and force a terminate. This is so we
+have a easy way to terminate the engine in the event of deadlocks.
 */
 func Running() bool {
 	s := atomic.LoadInt32(&system.state)
@@ -199,8 +199,8 @@ func Running() bool {
 }
 
 /*
-	Shutdown is a thread safe signal to the engine that it should shutdown.
-	The signal usually would come from the Platform or Program packages.
+Shutdown is a thread safe signal to the engine that it should shutdown.
+The signal usually would come from the Platform or Program packages.
 */
 func Shutdown() {
 	if atomic.CompareAndSwapInt32(&system.state, stateRunning, stateShutdown) {

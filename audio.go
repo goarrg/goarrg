@@ -21,7 +21,7 @@ import (
 )
 
 /*
-	Refer to driver's documentation on the valid value ranges
+Refer to driver's documentation on the valid value ranges
 */
 type AudioConfig struct {
 	Spec audio.Spec

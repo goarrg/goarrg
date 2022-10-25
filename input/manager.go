@@ -26,17 +26,17 @@ var manager struct {
 }
 
 /*
-	RegisterDevice registers a device that can be obetained with the GetDevice*
-	functions. The instance must be valid even if the device disconnected and
-	shall receive future events when the device reconnected.
+RegisterDevice registers a device that can be obetained with the GetDevice*
+functions. The instance must be valid even if the device disconnected and
+shall receive future events when the device reconnected.
 
-	Whether the instance refers to the same physical device on reconnect is a
-	implementation detail.
+Whether the instance refers to the same physical device on reconnect is a
+implementation detail.
 
-	Unplugging Controller A and plugging in Controller B of the same type, may
-	send events to the instance of the unplugged Controller A even tho they are
-	not the same physical device. However if the player then plugs Controller A,
-	it must use another unplugged instance or register a new instance.
+Unplugging Controller A and plugging in Controller B of the same type, may
+send events to the instance of the unplugged Controller A even tho they are
+not the same physical device. However if the player then plugs Controller A,
+it must use another unplugged instance or register a new instance.
 */
 func RegisterDevice(d Device) {
 	manager.Lock()
@@ -51,7 +51,7 @@ func RegisterDevice(d Device) {
 }
 
 /*
-	DeviceOfType retruns the first found device of the given type or nil.
+DeviceOfType retruns the first found device of the given type or nil.
 */
 func DeviceOfType(t string) Device {
 	v, ok := manager.Load(t)
@@ -64,8 +64,8 @@ func DeviceOfType(t string) Device {
 }
 
 /*
-	DevicesOfType retruns a copy of the slice containing all the devices of
-	a given type or nil.
+DevicesOfType retruns a copy of the slice containing all the devices of
+a given type or nil.
 */
 func DevicesOfType(t string) []Device {
 	v, ok := manager.Load(t)
@@ -78,7 +78,7 @@ func DevicesOfType(t string) []Device {
 }
 
 /*
-	ScanMask represents a bitmask of the types of input events to scan for.
+ScanMask represents a bitmask of the types of input events to scan for.
 */
 type ScanMask uint8
 
@@ -89,15 +89,15 @@ const (
 )
 
 /*
-	Scan returns the device and the action, using mask to filter action types,
-	that had a DeviceAction triggered this frame or nil and 0.
+Scan returns the device and the action, using mask to filter action types,
+that had a DeviceAction triggered this frame or nil and 0.
 
-	This is useful for input mapping without having to specifically code to
-	support every device type.
+This is useful for input mapping without having to specifically code to
+support every device type.
 
-	As this is only meant to be used for key mapping, we can assume there will
-	only be one input a frame and that speed isn't too important so just check
-	everything.
+As this is only meant to be used for key mapping, we can assume there will
+only be one input a frame and that speed isn't too important so just check
+everything.
 */
 func Scan(mask ScanMask) (device Device, action DeviceAction) {
 	if mask == 0 {

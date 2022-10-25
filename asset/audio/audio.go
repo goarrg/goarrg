@@ -42,10 +42,10 @@ const (
 )
 
 /*
-	Track in 32 bit Float non-interleaved format, map key represents the individual channels
+Track in 32 bit Float non-interleaved format, map key represents the individual channels
 
-	Driver is then responsible for converting it into the appropriate signal for output
-	audio is non-interleaved to make it easier to support different channel orders
+Driver is then responsible for converting it into the appropriate signal for output
+audio is non-interleaved to make it easier to support different channel orders
 */
 type Track map[Channel][]float32
 

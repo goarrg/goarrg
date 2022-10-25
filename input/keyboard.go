@@ -17,8 +17,8 @@ limitations under the License.
 package input
 
 /*
-	Key codes of keys on the keyboard as defined in the USB HID Usage Tables
-	https://usb.org/document-library/hid-usage-tables-122
+Key codes of keys on the keyboard as defined in the USB HID Usage Tables
+https://usb.org/document-library/hid-usage-tables-122
 */
 const (
 	KeyA                   DeviceAction = 4
