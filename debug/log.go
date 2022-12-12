@@ -68,7 +68,7 @@ WillLog reports whether logging at the given level would have an effect,
 based on the global log level.
 */
 func WillLog(level uint32) bool {
-	return atomic.LoadUint32(logger.level) <= level
+	return level >= atomic.LoadUint32(logger.level)
 }
 
 func VPrint(args ...interface{}) {
@@ -139,7 +139,7 @@ func (l *Logger) WillLog(level uint32) bool {
 	if logLevel == LogLevelGlobal {
 		return WillLog(level)
 	}
-	return logLevel <= level
+	return level >= logLevel
 }
 
 /*
