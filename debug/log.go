@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	LogLevelGlobal = iota
+	LogLevelGlobal uint32 = iota
 	LogLevelVerbose
 	LogLevelInfo
 	LogLevelWarn
