@@ -22,8 +22,8 @@ package sdl
 	#include "event.h"
 */
 import "C"
+
 import (
-	"reflect"
 	"unsafe"
 
 	"goarrg.com/input"
@@ -76,9 +76,7 @@ func (k *keyboard) update(C.goEvent) {
 
 	cNumKeys := C.int(0)
 	cKB := C.SDL_GetKeyboardState(&cNumKeys)
-	kb := *(*[]uint8)(unsafe.Pointer(&reflect.SliceHeader{
-		uintptr(unsafe.Pointer(cKB)), int(cNumKeys), int(cNumKeys),
-	}))
+	kb := unsafe.Slice((*uint8)(unsafe.Pointer(cKB)), int(cNumKeys))
 
 	for i := input.KeyA; i < input.KeyRightGUI; i++ {
 		k.currentState[i] = kb[i] == 1

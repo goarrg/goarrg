@@ -22,6 +22,7 @@ package sdl
 	#include "event.h"
 */
 import "C"
+
 import (
 	"goarrg.com/gmath"
 	"goarrg.com/input"

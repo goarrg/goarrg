@@ -28,7 +28,6 @@ import "C"
 
 import (
 	"fmt"
-	"reflect"
 	"unsafe"
 
 	"goarrg.com"
@@ -175,9 +174,7 @@ func vkInit(r goarrg.VkRenderer) error {
 
 		cExt := (**C.char)(C.calloc((C.size_t(cNumSDLExt) + C.size_t(len(vkCfg.Extensions))), C.size_t(unsafe.Sizeof((*C.char)(nil)))))
 		defer C.free(unsafe.Pointer(cExt))
-		ext := *(*[]*C.char)(unsafe.Pointer(&reflect.SliceHeader{
-			uintptr(unsafe.Pointer(cExt)), int(cNumSDLExt) + len(vkCfg.Extensions), int(cNumSDLExt) + len(vkCfg.Extensions),
-		}))
+		ext := unsafe.Slice((**C.char)(unsafe.Pointer(cExt)), int(cNumSDLExt)+len(vkCfg.Extensions))
 
 		if C.SDL_Vulkan_GetInstanceExtensions(Platform.display.mainWindow.cWindow, &cNumSDLExt, cExt) != C.SDL_TRUE {
 			err := debug.Errorf(C.GoString(C.SDL_GetError()))
@@ -192,9 +189,7 @@ func vkInit(r goarrg.VkRenderer) error {
 
 		cLayers := (**C.char)(C.calloc(C.size_t(len(vkCfg.Layers)), C.size_t(unsafe.Sizeof((*C.char)(nil)))))
 		defer C.free(unsafe.Pointer(cLayers))
-		layers := *(*[]*C.char)(unsafe.Pointer(&reflect.SliceHeader{
-			uintptr(unsafe.Pointer(cLayers)), len(vkCfg.Layers), len(vkCfg.Layers),
-		}))
+		layers := unsafe.Slice((**C.char)(unsafe.Pointer(cLayers)), len(vkCfg.Layers))
 
 		for i, l := range vkCfg.Layers {
 			layers[i] = C.CString(l)

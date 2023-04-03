@@ -42,8 +42,7 @@
         "exclude": [
             ".*string `windows` has \\d+ occurrences, make it a constant",
             ".*string `linux` has \\d+ occurrences, make it a constant",
-            ".*string `darwin` has \\d+ occurrences, make it a constant",
-            ".*unsafeptr: possible misuse of reflect.SliceHeader"
+            ".*string `darwin` has \\d+ occurrences, make it a constant"
         ]
     }
 }
