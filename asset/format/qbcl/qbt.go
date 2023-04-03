@@ -17,12 +17,10 @@ limitations under the License.
 package qbcl
 
 import (
-	"bufio"
 	"bytes"
 	"compress/zlib"
 	"encoding/binary"
 	"io"
-	"runtime"
 
 	"goarrg.com/asset"
 	"goarrg.com/asset/voxel"
@@ -34,10 +32,8 @@ func init() {
 	voxel.RegisterFormat("QB 2", loadQBT)
 }
 
-func loadQBT(a asset.Asset) (map[string]voxel.Model, error) {
+func loadQBT(r *asset.File) (map[string]voxel.Model, error) {
 	var version [2]byte
-
-	r := bufio.NewReader(a.Reader())
 
 	// skip magic
 	if _, err := r.Discard(4); err != nil {
@@ -90,12 +86,10 @@ func loadQBT(a asset.Asset) (map[string]voxel.Model, error) {
 		return nil, err
 	}
 
-	runtime.KeepAlive(a)
-
 	return m, nil
 }
 
-func loadNode(r *bufio.Reader, m map[string]voxel.Model) error {
+func loadNode(r *asset.File, m map[string]voxel.Model) error {
 	var t uint32
 	var sz uint32
 
@@ -121,7 +115,7 @@ func loadNode(r *bufio.Reader, m map[string]voxel.Model) error {
 	}
 }
 
-func loadMatrix(r *bufio.Reader, m map[string]voxel.Model) error {
+func loadMatrix(r *asset.File, m map[string]voxel.Model) error {
 	var nameSZ uint32
 	var name []byte
 
@@ -213,7 +207,7 @@ func loadMatrix(r *bufio.Reader, m map[string]voxel.Model) error {
 	return nil
 }
 
-func loadModel(r *bufio.Reader, m map[string]voxel.Model) error {
+func loadModel(r *asset.File, m map[string]voxel.Model) error {
 	var children uint32
 
 	err := binary.Read(r, binary.LittleEndian, &children)

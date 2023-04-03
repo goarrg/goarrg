@@ -27,7 +27,6 @@ package sdl
 import "C"
 
 import (
-	"reflect"
 	"unsafe"
 
 	"goarrg.com"
@@ -201,7 +200,7 @@ func verifyChannelList(list []audio.Channel) ([]audio.Channel, error) {
 	}
 }
 
-func decodeWAV(a asset.Asset) (audio.Spec, int, []float32, error) {
+func decodeWAV(a *asset.File) (audio.Spec, int, []float32, error) {
 	cR := C.RWFromUintptr(C.uintptr_t(a.Uintptr()), C.int(a.Size()))
 	cSpec := C.SDL_AudioSpec{}
 	cBuf := (*C.Uint8)(nil)
@@ -231,9 +230,7 @@ func decodeWAV(a asset.Asset) (audio.Spec, int, []float32, error) {
 	}
 
 	samples := int(cLen) / (int(cSpec.format&0xFF) / 8)
-	cTrack := *(*[]float32)(unsafe.Pointer(&reflect.SliceHeader{
-		uintptr(unsafe.Pointer(cBuf)), samples, samples,
-	}))
+	cTrack := unsafe.Slice((*float32)(unsafe.Pointer(cBuf)), samples)
 
 	if cCVT.needed == 1 {
 		sz := samples * int(unsafe.Sizeof(float32(0)))
@@ -257,9 +254,7 @@ func decodeWAV(a asset.Asset) (audio.Spec, int, []float32, error) {
 					sz, int(cCVT.len_cvt)), "Failed to decode WAV")
 		}
 
-		cTrack = *(*[]float32)(unsafe.Pointer(&reflect.SliceHeader{
-			uintptr(unsafe.Pointer(cCVT.buf)), samples, samples,
-		}))
+		cTrack = unsafe.Slice((*float32)(unsafe.Pointer(cCVT.buf)), samples)
 	}
 
 	return audio.Spec{

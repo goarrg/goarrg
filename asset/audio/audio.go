@@ -17,7 +17,6 @@ limitations under the License.
 package audio
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"sync"
@@ -70,7 +69,7 @@ type assetImpl struct {
 
 type format struct {
 	magic  []byte
-	decode func(asset.Asset) (Spec, int, []float32, error)
+	decode func(*asset.File) (Spec, int, []float32, error)
 }
 
 var (
@@ -94,7 +93,7 @@ func Channels7Point1() []Channel {
 	return []Channel{ChannelLeft, ChannelRight, ChannelCenter, ChannelLowFrequency, ChannelBackSurroundLeft, ChannelBackSurroundRight, ChannelSurroundLeft, ChannelSurroundRight}
 }
 
-func RegisterFormat(magic string, decode func(asset.Asset) (Spec, int, []float32, error)) {
+func RegisterFormat(magic string, decode func(*asset.File) (Spec, int, []float32, error)) {
 	mtx.Lock()
 	f, _ := formats.Load().([]format)
 	formats.Store(append(f, format{[]byte(magic), decode}))
@@ -107,7 +106,6 @@ func Load(file string) (Asset, error) {
 		return nil, debug.ErrorWrapf(err, "Failed to load audio")
 	}
 
-	r := bufio.NewReader(a.Reader())
 	formats, _ := formats.Load().([]format)
 
 formats:
@@ -116,7 +114,7 @@ formats:
 			continue
 		}
 
-		magic, err := r.Peek(len(f.magic))
+		magic, err := a.Peek(len(f.magic))
 
 		if err != nil && err != io.EOF {
 			return nil, debug.ErrorWrapf(err, "Failed to load audio")

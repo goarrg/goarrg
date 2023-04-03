@@ -26,47 +26,40 @@ import (
 	"goarrg.com/debug"
 )
 
-type file struct {
-	name string
-	size int
+type sysLinux struct {
 	fd   int
+	addr uintptr
 	data []byte
 }
 
-func mapFile(f string) (file, error) {
-	info, err := os.Stat(f)
+func mapFile(name string, size int) (sys, error) {
+	fd, err := unix.Open(name, unix.O_RDONLY, 0)
 	if err != nil {
 		return file{}, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
-	if info.Size() == 0 {
-		return file{}, debug.ErrorWrapf(debug.Errorf("Empty file"), "Failed to map file")
-	}
-
-	if unsafe.Sizeof(int(0)) != unsafe.Sizeof(int64(0)) && info.Size() > math.MaxInt32 {
-		return file{}, debug.ErrorWrapf(debug.Errorf("File too big"), "Failed to map file")
-	}
-
-	fd, err := unix.Open(f, unix.O_RDONLY, 0)
-	if err != nil {
-		return file{}, debug.ErrorWrapf(err, "Failed to map file")
-	}
-
-	data, err := unix.Mmap(fd, 0, int(info.Size()), unix.PROT_READ, unix.MAP_SHARED)
+	data, err := unix.Mmap(fd, 0, size), unix.PROT_READ, unix.MAP_SHARED)
 	if err != nil {
 		unix.Close(fd)
 		return file{}, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
-	return file{
-		f,
-		int(info.Size()),
+	return &sysLinux{
 		fd,
+		uintptr(unsafe.Pointer(unsafe.SliceData(data)))
 		data,
 	}, nil
 }
 
-func (f *file) close() {
+func (f *sysLinux) bytes() []byte {
+	return f.data
+}
+
+func (f *sysLinux) uintptr() uintptr {
+	return f.addr
+}
+
+func (f *sysLinux) close() {
 	if err := debug.ErrorWrapf(unix.Munmap(f.data), "Failed to unmap file"); err != nil {
 		panic(err)
 	}

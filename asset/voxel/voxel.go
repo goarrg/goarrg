@@ -17,7 +17,6 @@ limitations under the License.
 package voxel
 
 import (
-	"bufio"
 	"sync"
 	"sync/atomic"
 
@@ -31,13 +30,9 @@ type Model struct {
 	Size gmath.Vector3i
 }
 
-type Collection struct {
-	Models map[string]Model
-}
-
 type format struct {
 	magic  []byte
-	decode func(asset.Asset) (map[string]Model, error)
+	decode func(*asset.File) (map[string]Model, error)
 }
 
 var (
@@ -45,20 +40,19 @@ var (
 	formats = atomic.Value{}
 )
 
-func RegisterFormat(magic string, decode func(asset.Asset) (map[string]Model, error)) {
+func RegisterFormat(magic string, decode func(*asset.File) (map[string]Model, error)) {
 	mtx.Lock()
 	f, _ := formats.Load().([]format)
 	formats.Store(append(f, format{[]byte(magic), decode}))
 	mtx.Unlock()
 }
 
-func Load(file string) (*Collection, error) {
+func Load(file string) (map[string]Model, error) {
 	a, err := asset.Load(file)
 	if err != nil {
-		return nil, debug.ErrorWrapf(err, "Failed to load voxel collection")
+		return nil, debug.ErrorWrapf(err, "Failed to load voxel models")
 	}
 
-	r := bufio.NewReader(a.Reader())
 	formats, _ := formats.Load().([]format)
 
 formats:
@@ -67,9 +61,9 @@ formats:
 			continue
 		}
 
-		magic, err := r.Peek(len(f.magic))
+		magic, err := a.Peek(len(f.magic))
 		if err != nil {
-			return nil, debug.ErrorWrapf(err, "Failed to load voxel collection")
+			return nil, debug.ErrorWrapf(err, "Failed to load voxel models")
 		}
 
 		for i, b := range f.magic {
@@ -79,14 +73,8 @@ formats:
 		}
 
 		models, err := f.decode(a)
-		if err != nil {
-			return nil, debug.ErrorWrapf(err, "Failed to load voxel collection")
-		}
-
-		return &Collection{
-			models,
-		}, nil
+		return models, debug.ErrorWrapf(err, "Failed to load voxel models")
 	}
 
-	return nil, debug.Errorf("Failed to load voxel collection, unknown format")
+	return nil, debug.Errorf("Failed to load voxel models, unknown format")
 }

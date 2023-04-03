@@ -1,8 +1,5 @@
-//go:build !debug
-// +build !debug
-
 /*
-Copyright 2020 The goARRG Authors.
+Copyright 2023 The goARRG Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,24 +17,13 @@ limitations under the License.
 package asset
 
 import (
-	"bytes"
-	"os"
-	"testing"
+	"io/fs"
 )
 
-func TestMMAP(t *testing.T) {
-	want, err := os.ReadFile("mmap_test.go")
-	if err != nil {
-		t.Fatal(err)
-	}
+type FileSystem struct{}
 
-	got, err := mapFile("mmap_test.go", len(want))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer got.close()
+var FS = &FileSystem{}
 
-	if !bytes.Equal(got.bytes(), want) {
-		t.Fatal("got != want")
-	}
+func (*FileSystem) Open(name string) (fs.File, error) {
+	return Load(name)
 }
