@@ -17,8 +17,6 @@ limitations under the License.
 package asset
 
 import (
-	"math"
-	"os"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
@@ -35,18 +33,18 @@ type sysLinux struct {
 func mapFile(name string, size int) (sys, error) {
 	fd, err := unix.Open(name, unix.O_RDONLY, 0)
 	if err != nil {
-		return file{}, debug.ErrorWrapf(err, "Failed to map file")
+		return nil, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
-	data, err := unix.Mmap(fd, 0, size), unix.PROT_READ, unix.MAP_SHARED)
+	data, err := unix.Mmap(fd, 0, size, unix.PROT_READ, unix.MAP_SHARED)
 	if err != nil {
 		unix.Close(fd)
-		return file{}, debug.ErrorWrapf(err, "Failed to map file")
+		return nil, debug.ErrorWrapf(err, "Failed to map file")
 	}
 
 	return &sysLinux{
 		fd,
-		uintptr(unsafe.Pointer(unsafe.SliceData(data)))
+		uintptr(unsafe.Pointer(unsafe.SliceData(data))),
 		data,
 	}, nil
 }
