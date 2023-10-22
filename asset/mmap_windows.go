@@ -35,7 +35,8 @@ func mapFile(name string, size int) (sys, error) {
 	var err error
 	s := sysWindows{fh: windows.InvalidHandle, mh: windows.InvalidHandle}
 
-	s.fh, err = windows.CreateFile(windows.StringToUTF16Ptr(name), windows.GENERIC_READ, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE, nil, windows.OPEN_EXISTING, 0x08000000, 0)
+	s.fh, err = windows.CreateFile(windows.StringToUTF16Ptr(name), windows.GENERIC_READ, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE, nil,
+		windows.OPEN_EXISTING, windows.FILE_FLAG_SEQUENTIAL_SCAN, 0)
 	if s.fh == windows.InvalidHandle {
 		return nil, debug.ErrorWrapf(err, "Failed to map file")
 	}
