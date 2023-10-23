@@ -87,12 +87,23 @@ func (c *Camera) ViewMatrix() Matrix4f64 {
 	}
 }
 
-func (c *Camera) ProjectionMatrix() Matrix4f64 {
+func (c *Camera) PerspectiveMatrix() Matrix4f64 {
 	t := math.Tan(c.FOV * 0.5)
 
 	return Matrix4f64{
 		{1 / ((c.SizeX / c.SizeY) * t), 0, 0, 0},
 		{0, 1 / t, 0, 0},
+		{0, 0, 0, 1},
+		{0, 0, 1, 0},
+	}
+}
+
+func (c *Camera) PerspectiveInverseMatrix() Matrix4f64 {
+	t := math.Tan(c.FOV * 0.5)
+
+	return Matrix4f64{
+		{((c.SizeX / c.SizeY) * t), 0, 0, 0},
+		{0, t, 0, 0},
 		{0, 0, 0, 1},
 		{0, 0, 1, 0},
 	}
