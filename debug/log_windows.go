@@ -50,9 +50,9 @@ func init() {
 		C.init_std(&hIn, &hOut, &hErr)
 
 		// we must use the handles we get from _get_osfhandle cause GetStdHandle does not update/work sometimes
-		windows.SetStdHandle(windows.STD_INPUT_HANDLE, windows.Handle(hIn))
-		windows.SetStdHandle(windows.STD_OUTPUT_HANDLE, windows.Handle(hOut))
-		windows.SetStdHandle(windows.STD_ERROR_HANDLE, windows.Handle(hErr))
+		_ = windows.SetStdHandle(windows.STD_INPUT_HANDLE, windows.Handle(hIn))
+		_ = windows.SetStdHandle(windows.STD_OUTPUT_HANDLE, windows.Handle(hOut))
+		_ = windows.SetStdHandle(windows.STD_ERROR_HANDLE, windows.Handle(hErr))
 
 		os.Stdin = os.NewFile(uintptr(hIn), "/dev/stdin")
 		os.Stdout = os.NewFile(uintptr(hOut), "/dev/stdout")

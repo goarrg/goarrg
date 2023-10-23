@@ -49,7 +49,7 @@ func ErrorWrapf(err error, format string, args ...interface{}) error {
 
 	var pcs []uintptr
 
-	if en, ok := err.(*errorNode); ok {
+	if en, ok := err.(*errorNode); ok { // nolint: errorlint
 		sameStack := false
 		pcs = make([]uintptr, 2)
 

@@ -17,6 +17,7 @@ limitations under the License.
 package audio
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -116,7 +117,7 @@ formats:
 
 		magic, err := a.Peek(len(f.magic))
 
-		if err != nil && err != io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil, debug.ErrorWrapf(err, "Failed to load audio")
 		}
 

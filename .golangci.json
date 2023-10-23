@@ -11,6 +11,16 @@
             "unconvert",
             "wastedassign",
             "whitespace"
+        ],
+        "disable": [
+            "gosec",
+            "makezero",
+            "musttag",
+            "noctx",
+            "scopelint"
+        ],
+        "presets": [
+            "bugs"
         ]
     },
     "linters-settings": {
@@ -30,12 +40,15 @@
             ]
         },
         "depguard": {
-            "list-type": "whitelist",
-            "include-go-root": false,
-            "packages": [
-                "golang.org",
-                "goarrg.com"
-            ]
+            "rules": {
+                "main": {
+                    "allow": [
+                        "$gostd",
+                        "golang.org",
+                        "goarrg.com"
+                    ]
+                }
+            }
         }
     },
     "issues": {
