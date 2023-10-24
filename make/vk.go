@@ -41,12 +41,12 @@ func installVkHeaders(c VkHeadersConfig) error {
 	installDir := cgodep.InstallDir("vulkan-headers", toolchain.Target{}, toolchain.BuildRelease)
 	var headHash string
 	if c.Branch == "" {
-		branches, err := toolchain.RunOutput("git", "ls-remote", "--heads", "--sort=-version:refname", "https://github.com/KhronosGroup/Vulkan-Headers.git", "sdk-*")
+		branches, err := toolchain.RunOutput("git", "ls-remote", "--heads", "--sort=-version:refname", "https://github.com/KhronosGroup/Vulkan-Headers.git", "*sdk-*")
 		if err != nil {
 			return err
 		}
 		headHash = string(branches[:bytes.IndexAny(branches, " \t")])
-		i := bytes.Index(branches, []byte("sdk-"))
+		i := bytes.Index(branches, []byte("refs/heads/")) + 11
 		j := bytes.Index(branches[i:], []byte("\n"))
 		c.Branch = strings.TrimSpace(string(branches[i : i+j]))
 	} else {
