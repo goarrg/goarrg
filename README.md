@@ -21,32 +21,24 @@ However, there is nothing preventing you from creating a platform package to sup
 
 ## Dependencies
 
-goarrg requires go 1.16+<br>
-The following list includes dependencies needed to build [Installable Dependencies](#Installable-Dependencies)
+goarrg requires go 1.21+<br>
+The following list of dependencies assume you are using the make package to install the rest.
 | OS | Dependencies |
 | -- | -- |
 | Ubuntu | sudo apt-get install build-essential cmake libxext-dev libpulse-dev |
 | Windows | mingw-w64, cmake |
 
 ### Graphics API Specific
-| OS | Folder Prefix | Dependencies |
+| OS | API | Dependencies |
 | -- | -- | -- |
 | Ubuntu | gl | sudo apt-get install libglu1-mesa-dev mesa-common-dev |
 | Ubuntu_amd64 | vk | Vulkan SDK |
 | Windows_amd64 | vk | Vulkan SDK |
 
-### Installable Dependencies
-goarrg comes with commands to install certain dependencies, to see a list of available dependencies run:
-<pre><code>go run goarrg.com/cmd/goarrg install -h</pre></code>
-
-Installed dependencies will be rebuilt as needed. e.g. when goarrg is updated and it needs a newer version of the dependency.
-
-If there is a `-target` flag available for the dependency, it will only be built for the selected target, by default the target is the current OS/Arch. You need to run the install command for every OS/Arch you wish to cross compile to.
-
-To avoid issues with multiple versions of goarrg, these dependencies are installed to a location within your project folder (the folder with a `go.mod` file).
-
 ## Cross Compile
 There is cross compile support for the supported platforms, assuming you installed a C/C++ cross compiler with the correct file names. To cross compile to other platforms, or to use a non default toolchain, you need to set the `CC`/`CXX`/`AR` environmental variables. For Windows, you also need to set `RC`.
+
+The `toolchain/gcc` package is there to help setup these environmental variables.
 
 ### Default Compiler Selection
 | Taraget Platform | Prefix |
@@ -67,20 +59,13 @@ There is cross compile support for the supported platforms, assuming you install
 Install Go manually to ensure you have the latest version.<br/>
 https://golang.org/doc/install
 
-## Quick Start
 <pre><code>mkdir projectfolder
 cd projectfolder
 go mod init github.com/username/projectname
-echo -e "//+build tools\npackage main\nimport _ \"goarrg.com/cmd/goarrg\"" > tools.go
 go get -d goarrg.com/...
 </code></pre>
 
-To test goarrg is working and to install all installable dependencies available,
-you can run:
-<pre><code>go run goarrg.com/cmd/goarrg build yourself -vv</code></pre>
-
-After which you can start coding and use the `build`/`run`/`test` commands to
-build the project, build to a tmp folder and run the project, and run go tests, respectively.
+After which you write a ./cmd/make program that imports the `goarrg.com/make` package to build dependencies and to build your project.
 
 ## Examples
 Examples can be found at https://github.com/goarrg/examples
