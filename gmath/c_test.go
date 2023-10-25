@@ -20,7 +20,6 @@ limitations under the License.
 package gmath
 
 import (
-	"math"
 	"testing"
 )
 
@@ -28,7 +27,7 @@ func TestC(t *testing.T) {
 	c := Camera[float32]{
 		SizeX: 3,
 		SizeY: 3,
-		FOV:   90 * (math.Pi / 180),
+		FOV:   DegToRad[float32](90),
 	}
 
 	want := [][]Vector3f[float32]{
