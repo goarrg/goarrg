@@ -140,6 +140,11 @@ func TestMatrixView(t *testing.T) {
 	}
 }
 
+var (
+	globalP Point3f32
+	globalM Matrix4x4f32
+)
+
 func BenchmarkMatrix(b *testing.B) {
 	tr := Transform[float32]{}
 	target := Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
@@ -150,30 +155,37 @@ func BenchmarkMatrix(b *testing.B) {
 
 	c := Camera[float32]{Transform: tr, FOV: rand.Float32(), SizeX: rand.Float32(), SizeY: rand.Float32()}
 
+	var p Point3f32
+	var m Matrix4x4f32
+
 	b.Run("TransformPoint", func(b *testing.B) {
 		b.Run("Slow", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				_ = tr.ModelMatrix().MultiplyPoint(target)
+				p = tr.ModelMatrix().MultiplyPoint(target)
 			}
 		})
+		globalP = p
 		b.Run("Optimized", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				_ = tr.TransformPoint(target)
+				p = tr.TransformPoint(target)
 			}
 		})
+		globalP = p
 	})
 
 	b.Run("Model", func(b *testing.B) {
 		b.Run("Slow", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				_ = tr.TranslationMatrix().Multiply(tr.RotationMatrix().Multiply(tr.ScaleMatrix()))
+				m = tr.TranslationMatrix().Multiply(tr.RotationMatrix().Multiply(tr.ScaleMatrix()))
 			}
 		})
+		globalM = m
 		b.Run("Optimized", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				_ = tr.ModelMatrix()
+				m = tr.ModelMatrix()
 			}
 		})
+		globalM = m
 	})
 
 	b.Run("View", func(b *testing.B) {
@@ -194,40 +206,60 @@ func BenchmarkMatrix(b *testing.B) {
 		})
 		b.Run("Optimized", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				_ = c.ViewMatrix()
+				m = c.ViewMatrix()
 			}
 		})
 	})
+	globalM = m
 
-	m := tr.ModelMatrix()
+	m2 := tr.ModelMatrix()
 
 	b.Run("MultiplyPoint", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = m.MultiplyPoint(target)
+			p = m2.MultiplyPoint(target)
 		}
 	})
+	globalP = p
 
 	b.Run("ModelMultiplyPoint", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = tr.ModelMatrix().MultiplyPoint(target)
+			p = tr.ModelMatrix().MultiplyPoint(target)
 		}
 	})
+	globalP = p
 
 	b.Run("Multiply", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = m.Multiply(m)
+			m = m2.Multiply(m)
 		}
 	})
+	globalM = m
 
 	b.Run("Transpose", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = m.Transpose()
+			m = m2.Transpose()
 		}
 	})
+	globalM = m
 
 	b.Run("Invert", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = m.Invert()
+			m = m2.Invert()
 		}
 	})
+	globalM = m
+
+	b.Run("ToArrayf32", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			m = m2.ToArrayf32()
+		}
+	})
+	globalM = m
+
+	b.Run("TransposedToArrayf32", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			m = m2.TransposedToArrayf32()
+		}
+	})
+	globalM = m
 }

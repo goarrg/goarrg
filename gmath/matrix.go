@@ -114,3 +114,15 @@ func (m Matrix4x4f[T]) ToArrayf32() [4][4]float32 {
 
 	return mf
 }
+
+func (m Matrix4x4f[T]) TransposedToArrayf32() [4][4]float32 {
+	mf := [4][4]float32{}
+
+	for y := 0; y < 4; y++ {
+		for x := 0; x < 4; x++ {
+			mf[y][x] = float32(m[x][y])
+		}
+	}
+
+	return mf
+}
