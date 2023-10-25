@@ -26,22 +26,22 @@ import (
 
 func TestLookAt(t *testing.T) {
 	for i := 0; i < 1e6; i++ {
-		p1 := Point3f64{
-			X: rand.Float64(),
-			Y: rand.Float64(),
-			Z: rand.Float64(),
+		p1 := Point3f[float32]{
+			X: rand.Float32(),
+			Y: rand.Float32(),
+			Z: rand.Float32(),
 		}
 
-		p2 := Point3f64{
-			X: rand.Float64(),
-			Y: rand.Float64(),
-			Z: rand.Float64(),
+		p2 := Point3f[float32]{
+			X: rand.Float32(),
+			Y: rand.Float32(),
+			Z: rand.Float32(),
 		}
 
-		tr := Transform{Pos: p1}
-		tr.LookAt(Vector3f64{Y: 1}, p2)
+		tr := Transform[float32]{Pos: p1}
+		tr.LookAt(Vector3f[float32]{Y: 1}, p2)
 
-		f := tr.TransformDirection(Vector3f64{Z: 1})
+		f := tr.TransformDirection(Vector3f[float32]{Z: 1})
 		d := p1.VectorTo(p2).Normalize()
 
 		if f.Subtract(d).Magnitude() > 0.000001 {
@@ -52,9 +52,9 @@ func TestLookAt(t *testing.T) {
 }
 
 func BenchmarkLookAt(b *testing.B) {
-	t := Transform{}
+	t := Transform[float32]{}
 
 	for i := 0; i < b.N; i++ {
-		t.LookAt(Vector3f64{Y: 1}, Point3f64{})
+		t.LookAt(Vector3f[float32]{Y: 1}, Point3f[float32]{})
 	}
 }

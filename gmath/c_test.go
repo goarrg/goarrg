@@ -25,13 +25,13 @@ import (
 )
 
 func TestC(t *testing.T) {
-	c := Camera{
+	c := Camera[float32]{
 		SizeX: 3,
 		SizeY: 3,
 		FOV:   90 * (math.Pi / 180),
 	}
 
-	want := [][]Vector3f64{
+	want := [][]Vector3f[float32]{
 		{{-0.57735027, 0.57735027, 0.57735027}, {-0.70710678, 0, 0.70710678}, {-0.57735027, -0.57735027, 0.57735027}},
 		{{0, 0.70710678, 0.70710678}, {0, 0, 1}, {0, -0.70710678, 0.70710678}},
 		{{0.57735027, 0.57735027, 0.57735027}, {0.70710678, 0, 0.70710678}, {0.57735027, -0.57735027, 0.57735027}},
@@ -39,8 +39,8 @@ func TestC(t *testing.T) {
 
 	for x := 0; x < (int)(c.SizeX); x++ {
 		for y := 0; y < (int)(c.SizeY); y++ {
-			have := round(c.ScreenPointToRay(x, y).Dir)
-			if have != want[x][y] {
+			have := c.ScreenPointToRay(x, y).Dir
+			if round(have) != round(want[x][y]) {
 				t.Fatalf("[%d, %d] = %v != %v\n", x, y, have, want[x][y])
 			}
 		}
@@ -48,7 +48,7 @@ func TestC(t *testing.T) {
 }
 
 func BenchmarkC(b *testing.B) {
-	c := Camera{
+	c := Camera[float32]{
 		SizeX: 1920,
 		SizeY: 1080,
 		FOV:   90,

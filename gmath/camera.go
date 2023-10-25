@@ -18,38 +18,45 @@ package gmath
 
 import (
 	"math"
+
+	"golang.org/x/exp/constraints"
 )
 
-type Camera struct {
-	Transform
+type Camera[T constraints.Float] struct {
+	Transform[T]
 
-	SizeX float64
-	SizeY float64
-	FOV   float64
+	SizeX T
+	SizeY T
+	FOV   T
 }
 
-func (c *Camera) ScreenPointToRay(x, y int) Ray {
-	dir := Vector3f64{
-		X: float64(x) - ((c.SizeX - 1) / 2),
-		Y: ((c.SizeY - 1) / 2) - float64(y),
-		Z: ((c.SizeY - 1) / 2) / math.Tan(c.FOV*0.5),
+type (
+	Cameraf32 = Camera[float32]
+	Cameraf64 = Camera[float64]
+)
+
+func (c *Camera[T]) ScreenPointToRay(x, y int) Ray[T] {
+	dir := Vector3f[T]{
+		X: T(x) - ((c.SizeX - 1) / 2),
+		Y: ((c.SizeY - 1) / 2) - T(y),
+		Z: ((c.SizeY - 1) / 2) / T(math.Tan(float64(c.FOV*0.5))),
 	}.Normalize()
 
 	dir = c.TransformDirection(dir)
-	invDir := Vector3f64{
+	invDir := Vector3f[T]{
 		X: 1 / dir.X,
 		Y: 1 / dir.Y,
 		Z: 1 / dir.Z,
 	}
 
-	return Ray{
+	return Ray[T]{
 		Dir:    dir,
 		InvDir: invDir,
 		Org:    c.Pos,
 	}
 }
 
-func (c *Camera) ViewMatrix() Matrix4f64 {
+func (c *Camera[T]) ViewMatrix() Matrix4x4f[T] {
 	rot := c.Transform.Rot
 
 	rot.X = -rot.X
@@ -67,30 +74,30 @@ func (c *Camera) ViewMatrix() Matrix4f64 {
 	yz := rot.Y * rot.Z * 2
 	wx := rot.W * rot.X * 2
 
-	m0 := Vector3f64{
+	m0 := Vector3f[T]{
 		X: 1 - y2 - z2, Y: xy - wz, Z: xz + wy,
 	}
 
-	m1 := Vector3f64{
+	m1 := Vector3f[T]{
 		X: xy + wz, Y: 1 - x2 - z2, Z: yz - wx,
 	}
 
-	m2 := Vector3f64{
+	m2 := Vector3f[T]{
 		X: xz - wy, Y: yz + wx, Z: 1 - x2 - y2,
 	}
 
-	return Matrix4f64{
-		{m0.X, m0.Y, m0.Z, -(m0.Dot(Vector3f64(c.Transform.Pos)))},
-		{m1.X, m1.Y, m1.Z, -(m1.Dot(Vector3f64(c.Transform.Pos)))},
-		{m2.X, m2.Y, m2.Z, -(m2.Dot(Vector3f64(c.Transform.Pos)))},
+	return Matrix4x4f[T]{
+		{m0.X, m0.Y, m0.Z, -(m0.Dot(Vector3f[T](c.Transform.Pos)))},
+		{m1.X, m1.Y, m1.Z, -(m1.Dot(Vector3f[T](c.Transform.Pos)))},
+		{m2.X, m2.Y, m2.Z, -(m2.Dot(Vector3f[T](c.Transform.Pos)))},
 		{0, 0, 0, 1},
 	}
 }
 
-func (c *Camera) PerspectiveMatrix() Matrix4f64 {
-	t := math.Tan(c.FOV * 0.5)
+func (c *Camera[T]) PerspectiveMatrix() Matrix4x4f[T] {
+	t := T(math.Tan(float64(c.FOV * 0.5)))
 
-	return Matrix4f64{
+	return Matrix4x4f[T]{
 		{1 / ((c.SizeX / c.SizeY) * t), 0, 0, 0},
 		{0, 1 / t, 0, 0},
 		{0, 0, 0, 1},
@@ -98,10 +105,10 @@ func (c *Camera) PerspectiveMatrix() Matrix4f64 {
 	}
 }
 
-func (c *Camera) PerspectiveInverseMatrix() Matrix4f64 {
-	t := math.Tan(c.FOV * 0.5)
+func (c *Camera[T]) PerspectiveInverseMatrix() Matrix4x4f[T] {
+	t := T(math.Tan(float64(c.FOV * 0.5)))
 
-	return Matrix4f64{
+	return Matrix4x4f[T]{
 		{((c.SizeX / c.SizeY) * t), 0, 0, 0},
 		{0, t, 0, 0},
 		{0, 0, 0, 1},

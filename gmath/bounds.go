@@ -16,10 +16,17 @@ limitations under the License.
 
 package gmath
 
-type Bounds3f64 struct {
-	Min Vector3f64
-	Max Vector3f64
+import "golang.org/x/exp/constraints"
+
+type Bounds3f[T constraints.Float] struct {
+	Min Vector3f[T]
+	Max Vector3f[T]
 }
+
+type (
+	Bounds3f32 = Bounds3f[float32]
+	Bounds3f64 = Bounds3f[float64]
+)
 
 type Bounds3i struct {
 	Min Vector3i

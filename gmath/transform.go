@@ -18,32 +18,39 @@ package gmath
 
 import (
 	"math"
+
+	"golang.org/x/exp/constraints"
 )
 
-type Transform struct {
-	Pos   Point3f64
-	Rot   Quaternion
-	Scale Vector3f64
+type Transform[T constraints.Float] struct {
+	Pos   Point3f[T]
+	Rot   Quaternion[T]
+	Scale Vector3f[T]
 }
 
-func (t *Transform) TransformPoint(p Point3f64) Point3f64 {
-	return t.Pos.Translate(t.Rot.Rotate(Vector3f64(p).Scale(t.Scale)))
+type (
+	Transformf32 = Transform[float32]
+	Transformf64 = Transform[float64]
+)
+
+func (t *Transform[T]) TransformPoint(p Point3f[T]) Point3f[T] {
+	return t.Pos.Translate(t.Rot.Rotate(Vector3f[T](p).Scale(t.Scale)))
 }
 
-func (t *Transform) TransformVector(v Vector3f64) Vector3f64 {
+func (t *Transform[T]) TransformVector(v Vector3f[T]) Vector3f[T] {
 	return t.Rot.Rotate(v.Scale(t.Scale))
 }
 
-func (t *Transform) TransformDirection(v Vector3f64) Vector3f64 {
+func (t *Transform[T]) TransformDirection(v Vector3f[T]) Vector3f[T] {
 	return t.Rot.Rotate(v)
 }
 
-func (t *Transform) LookAt(up Vector3f64, target Point3f64) {
+func (t *Transform[T]) LookAt(up Vector3f[T], target Point3f[T]) {
 	m2 := t.Pos.VectorTo(target).Normalize()
 	m0 := up.Cross(m2).Normalize()
 	m1 := m2.Cross(m0)
 	if trace := m0.X + m1.Y + m2.Z; trace > 0 {
-		s := math.Sqrt(trace + 1)
+		s := T(math.Sqrt(float64(trace + 1)))
 		t.Rot.W = s * 0.5
 		s = 0.5 / s
 		t.Rot.X = (m1.Z - m2.Y) * s
@@ -52,7 +59,7 @@ func (t *Transform) LookAt(up Vector3f64, target Point3f64) {
 		return
 	}
 	if (m0.X >= m1.Y) && (m0.X >= m2.Z) {
-		s := math.Sqrt(1 + m0.X - m1.Y - m2.Z)
+		s := T(math.Sqrt(float64(1 + m0.X - m1.Y - m2.Z)))
 		t.Rot.X = 0.5 * s
 		s = 0.5 / s
 		t.Rot.Y = (m0.Y + m1.X) * s
@@ -61,7 +68,7 @@ func (t *Transform) LookAt(up Vector3f64, target Point3f64) {
 		return
 	}
 	if m1.Y > m2.Z {
-		s := math.Sqrt(1 + m1.Y - m0.X - m2.Z)
+		s := T(math.Sqrt(float64(1 + m1.Y - m0.X - m2.Z)))
 		t.Rot.Y = 0.5 * s
 		s = 0.5 / s
 		t.Rot.X = (m1.X + m0.Y) * s
@@ -69,7 +76,7 @@ func (t *Transform) LookAt(up Vector3f64, target Point3f64) {
 		t.Rot.W = (m2.X - m0.Z) * s
 		return
 	}
-	s := math.Sqrt(1 + m2.Z - m0.X - m1.Y)
+	s := T(math.Sqrt(float64(1 + m2.Z - m0.X - m1.Y)))
 	t.Rot.Z = 0.5 * s
 	s = 0.5 / s
 	t.Rot.X = (m2.X + m0.Z) * s
@@ -77,8 +84,8 @@ func (t *Transform) LookAt(up Vector3f64, target Point3f64) {
 	t.Rot.W = (m0.Y - m1.X) * s
 }
 
-func (t *Transform) TranslationMatrix() Matrix4f64 {
-	return Matrix4f64{
+func (t *Transform[T]) TranslationMatrix() Matrix4x4f[T] {
+	return Matrix4x4f[T]{
 		{1, 0, 0, t.Pos.X},
 		{0, 1, 0, t.Pos.Y},
 		{0, 0, 1, t.Pos.Z},
@@ -86,7 +93,7 @@ func (t *Transform) TranslationMatrix() Matrix4f64 {
 	}
 }
 
-func (t *Transform) RotationMatrix() Matrix4f64 {
+func (t *Transform[T]) RotationMatrix() Matrix4x4f[T] {
 	x2 := t.Rot.X * t.Rot.X * 2
 	y2 := t.Rot.Y * t.Rot.Y * 2
 	z2 := t.Rot.Z * t.Rot.Z * 2
@@ -98,7 +105,7 @@ func (t *Transform) RotationMatrix() Matrix4f64 {
 	yz := t.Rot.Y * t.Rot.Z * 2
 	wx := t.Rot.W * t.Rot.X * 2
 
-	return Matrix4f64{
+	return Matrix4x4f[T]{
 		{1 - y2 - z2, xy - wz, xz + wy, 0},
 		{xy + wz, 1 - x2 - z2, yz - wx, 0},
 		{xz - wy, yz + wx, 1 - x2 - y2, 0},
@@ -106,8 +113,8 @@ func (t *Transform) RotationMatrix() Matrix4f64 {
 	}
 }
 
-func (t *Transform) ScaleMatrix() Matrix4f64 {
-	return Matrix4f64{
+func (t *Transform[T]) ScaleMatrix() Matrix4x4f[T] {
+	return Matrix4x4f[T]{
 		{t.Scale.X, 0, 0, 0},
 		{0, t.Scale.Y, 0, 0},
 		{0, 0, t.Scale.Z, 0},
@@ -115,7 +122,7 @@ func (t *Transform) ScaleMatrix() Matrix4f64 {
 	}
 }
 
-func (t *Transform) ModelMatrix() Matrix4f64 {
+func (t *Transform[T]) ModelMatrix() Matrix4x4f[T] {
 	x2 := t.Rot.X * t.Rot.X * 2
 	y2 := t.Rot.Y * t.Rot.Y * 2
 	z2 := t.Rot.Z * t.Rot.Z * 2
@@ -127,19 +134,19 @@ func (t *Transform) ModelMatrix() Matrix4f64 {
 	yz := t.Rot.Y * t.Rot.Z * 2
 	wx := t.Rot.W * t.Rot.X * 2
 
-	m0 := Vector3f64{
+	m0 := Vector3f[T]{
 		X: 1 - y2 - z2, Y: xy - wz, Z: xz + wy,
 	}.Scale(t.Scale)
 
-	m1 := Vector3f64{
+	m1 := Vector3f[T]{
 		X: xy + wz, Y: 1 - x2 - z2, Z: yz - wx,
 	}.Scale(t.Scale)
 
-	m2 := Vector3f64{
+	m2 := Vector3f[T]{
 		X: xz - wy, Y: yz + wx, Z: 1 - x2 - y2,
 	}.Scale(t.Scale)
 
-	return Matrix4f64{
+	return Matrix4x4f[T]{
 		{m0.X, m0.Y, m0.Z, t.Pos.X},
 		{m1.X, m1.Y, m1.Z, t.Pos.Y},
 		{m2.X, m2.Y, m2.Z, t.Pos.Z},

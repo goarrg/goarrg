@@ -18,32 +18,39 @@ package gmath
 
 import (
 	"math"
+
+	"golang.org/x/exp/constraints"
 )
 
-type Quaternion struct {
-	X, Y, Z, W float64
+type Quaternion[T constraints.Float] struct {
+	X, Y, Z, W T
 }
 
+type (
+	Quaternionf32 = Quaternion[float32]
+	Quaternionf64 = Quaternion[float64]
+)
+
 // QuaternionFromEuler is creates a quaternion from eular rotation in the z x y order.
-func QuaternionFromEuler(x, y, z float64) Quaternion {
+func QuaternionFromEuler[T constraints.Float](x, y, z T) Quaternion[T] {
 	x *= 0.5
 	y *= 0.5
 	z *= 0.5
 
-	cx := math.Cos(x)
-	cy := math.Cos(y)
-	cz := math.Cos(z)
+	cx := T(math.Cos(float64(x)))
+	cy := T(math.Cos(float64(y)))
+	cz := T(math.Cos(float64(z)))
 
-	sx := math.Sin(x)
-	sy := math.Sin(y)
-	sz := math.Sin(z)
+	sx := T(math.Sin(float64(x)))
+	sy := T(math.Sin(float64(y)))
+	sz := T(math.Sin(float64(z)))
 
 	cxcy := cx * cy
 	cxsy := cx * sy
 	sxsy := sx * sy
 	sxcy := sx * cy
 
-	return Quaternion{
+	return Quaternion[T]{
 		X: (sxcy * cz) + (cxsy * sz),
 		Y: (cxsy * cz) - (sxcy * sz),
 		Z: (cxcy * sz) - (sxsy * cz),
@@ -51,20 +58,20 @@ func QuaternionFromEuler(x, y, z float64) Quaternion {
 	}
 }
 
-func QuaternionFromAngleAxis(t float64, axis Vector3f64) Quaternion {
+func QuaternionFromAngleAxis[T constraints.Float](t T, axis Vector3f[T]) Quaternion[T] {
 	t *= 0.5
-	st := math.Sin(t)
+	st := T(math.Sin(float64(t)))
 
-	return Quaternion{
+	return Quaternion[T]{
 		X: st * axis.X,
 		Y: st * axis.Y,
 		Z: st * axis.Z,
-		W: math.Cos(t),
+		W: T(math.Cos(float64(t))),
 	}
 }
 
-func (q Quaternion) Multiply(q2 Quaternion) Quaternion {
-	return Quaternion{
+func (q Quaternion[T]) Multiply(q2 Quaternion[T]) Quaternion[T] {
+	return Quaternion[T]{
 		X: (q.X * q2.W) + (q.Y * q2.Z) - (q.Z * q2.Y) + (q.W * q2.X),
 		Y: (-q.X * q2.Z) + (q.Y * q2.W) + (q.Z * q2.X) + (q.W * q2.Y),
 		Z: (q.X * q2.Y) - (q.Y * q2.X) + (q.Z * q2.W) + (q.W * q2.Z),
@@ -72,7 +79,7 @@ func (q Quaternion) Multiply(q2 Quaternion) Quaternion {
 	}
 }
 
-func (q Quaternion) Rotate(v Vector3f64) Vector3f64 {
+func (q Quaternion[T]) Rotate(v Vector3f[T]) Vector3f[T] {
 	x2 := q.X * q.X * 2
 	y2 := q.Y * q.Y * 2
 	z2 := q.Z * q.Z * 2
@@ -84,43 +91,47 @@ func (q Quaternion) Rotate(v Vector3f64) Vector3f64 {
 	yz := q.Y * q.Z * 2
 	wx := q.W * q.X * 2
 
-	m0 := Vector3f64{
+	m0 := Vector3f[T]{
 		X: 1 - y2 - z2,
 		Y: xy - wz,
 		Z: xz + wy,
 	}
 
-	m1 := Vector3f64{
+	m1 := Vector3f[T]{
 		X: xy + wz,
 		Y: 1 - x2 - z2,
 		Z: yz - wx,
 	}
 
-	m2 := Vector3f64{
+	m2 := Vector3f[T]{
 		X: xz - wy,
 		Y: yz + wx,
 		Z: 1 - x2 - y2,
 	}
 
-	return Vector3f64{
+	return Vector3f[T]{
 		X: m0.Dot(v),
 		Y: m1.Dot(v),
 		Z: m2.Dot(v),
 	}
 }
 
-func (q Quaternion) Magnitude() float64 {
-	return math.Sqrt((q.X * q.X) + (q.Y * q.Y) + (q.Z * q.Z) + (q.W * q.W))
+func (q Quaternion[T]) Magnitude() T {
+	return T(math.Sqrt(
+		float64(
+			(q.X * q.X) + (q.Y * q.Y) + (q.Z * q.Z) + (q.W * q.W),
+		),
+	))
 }
 
-func (q Quaternion) Normalize() Quaternion {
+func (q Quaternion[T]) Normalize() Quaternion[T] {
 	m := q.Magnitude()
 
 	if m == 0 || m == 1 {
 		return q
 	}
 
-	return Quaternion{
+	return Quaternion[T]{
 		X: q.X / m,
 		Y: q.Y / m,
 		Z: q.Z / m,

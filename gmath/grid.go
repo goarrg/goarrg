@@ -18,14 +18,21 @@ package gmath
 
 import (
 	"math"
+
+	"golang.org/x/exp/constraints"
 )
 
-type Grid struct {
-	Pos        Point3f64
-	Bounds     Bounds3f64
-	Scale      float64
+type Grid[T constraints.Float] struct {
+	Pos        Point3f[T]
+	Bounds     Bounds3f[T]
+	Scale      T
 	CellBounds Bounds3i
 }
+
+type (
+	Gridf32 = Grid[float32]
+	Gridf64 = Grid[float64]
+)
 
 type GridCell struct {
 	X int
@@ -33,32 +40,32 @@ type GridCell struct {
 	Z int
 }
 
-func (g *Grid) Init(cellCount Vector3i, cellSize float64) {
+func (g *Grid[T]) Init(cellCount Vector3i, cellSize T) {
 	g.Scale = cellSize
 
 	if cellCount.X > 0 {
 		g.CellBounds.Max.X = cellCount.X - 1
-		g.Bounds.Max.X = (float64(cellCount.X) / 2) * g.Scale
+		g.Bounds.Max.X = (T(cellCount.X) / 2) * g.Scale
 		g.Bounds.Min.X = -g.Bounds.Max.X
 	}
 
 	if cellCount.Y > 0 {
 		g.CellBounds.Max.Y = cellCount.Y - 1
-		g.Bounds.Max.Y = (float64(cellCount.Y) / 2) * g.Scale
+		g.Bounds.Max.Y = (T(cellCount.Y) / 2) * g.Scale
 		g.Bounds.Min.Y = -g.Bounds.Max.Y
 	}
 
 	if cellCount.Z > 0 {
 		g.CellBounds.Max.Z = cellCount.Z - 1
-		g.Bounds.Max.Z = (float64(cellCount.Z) / 2) * g.Scale
+		g.Bounds.Max.Z = (T(cellCount.Z) / 2) * g.Scale
 		g.Bounds.Min.Z = -g.Bounds.Max.Z
 	}
 }
 
-func (g *Grid) WorldPosToCell(p Point3f64) GridCell {
-	x := int(math.Floor((p.X - g.Pos.X - g.Bounds.Min.X) / g.Scale))
-	y := int(math.Floor((p.Y - g.Pos.Y - g.Bounds.Min.Y) / g.Scale))
-	z := int(math.Floor((p.Z - g.Pos.Z - g.Bounds.Min.Z) / g.Scale))
+func (g *Grid[T]) WorldPosToCell(p Point3f[T]) GridCell {
+	x := int(math.Floor(float64((p.X - g.Pos.X - g.Bounds.Min.X) / g.Scale)))
+	y := int(math.Floor(float64((p.Y - g.Pos.Y - g.Bounds.Min.Y) / g.Scale)))
+	z := int(math.Floor(float64((p.Z - g.Pos.Z - g.Bounds.Min.Z) / g.Scale)))
 
 	return GridCell{
 		X: x,
@@ -67,37 +74,37 @@ func (g *Grid) WorldPosToCell(p Point3f64) GridCell {
 	}
 }
 
-func (g *Grid) CellToWorldPos(gc GridCell) Point3f64 {
-	return Point3f64{
-		X: (float64(gc.X) * g.Scale) + g.Bounds.Min.X + (0.5 * g.Scale) + g.Pos.X,
-		Y: (float64(gc.Y) * g.Scale) + g.Bounds.Min.Y + (0.5 * g.Scale) + g.Pos.Y,
-		Z: (float64(gc.Z) * g.Scale) + g.Bounds.Min.Z + (0.5 * g.Scale) + g.Pos.Z,
+func (g *Grid[T]) CellToWorldPos(gc GridCell) Point3f[T] {
+	return Point3f[T]{
+		X: (T(gc.X) * g.Scale) + g.Bounds.Min.X + (0.5 * g.Scale) + g.Pos.X,
+		Y: (T(gc.Y) * g.Scale) + g.Bounds.Min.Y + (0.5 * g.Scale) + g.Pos.Y,
+		Z: (T(gc.Z) * g.Scale) + g.Bounds.Min.Z + (0.5 * g.Scale) + g.Pos.Z,
 	}
 }
 
-func (gc GridCell) Clamp(g Grid) GridCell {
-	if gc.X < g.CellBounds.Min.X {
-		gc.X = g.CellBounds.Min.X
+func (gc GridCell) Clamp(bounds Bounds3i) GridCell {
+	if gc.X < bounds.Min.X {
+		gc.X = bounds.Min.X
 	}
 
-	if gc.X > g.CellBounds.Max.X {
-		gc.X = g.CellBounds.Max.X
+	if gc.X > bounds.Max.X {
+		gc.X = bounds.Max.X
 	}
 
-	if gc.Y < g.CellBounds.Min.Y {
-		gc.Y = g.CellBounds.Min.Y
+	if gc.Y < bounds.Min.Y {
+		gc.Y = bounds.Min.Y
 	}
 
-	if gc.Y > g.CellBounds.Max.Y {
-		gc.Y = g.CellBounds.Max.Y
+	if gc.Y > bounds.Max.Y {
+		gc.Y = bounds.Max.Y
 	}
 
-	if gc.Z < g.CellBounds.Min.Z {
-		gc.Z = g.CellBounds.Min.Z
+	if gc.Z < bounds.Min.Z {
+		gc.Z = bounds.Min.Z
 	}
 
-	if gc.Z > g.CellBounds.Max.Z {
-		gc.Z = g.CellBounds.Max.Z
+	if gc.Z > bounds.Max.Z {
+		gc.Z = bounds.Max.Z
 	}
 
 	return gc

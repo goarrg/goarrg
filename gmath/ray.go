@@ -18,36 +18,43 @@ package gmath
 
 import (
 	"math"
+
+	"golang.org/x/exp/constraints"
 )
 
-type Ray struct {
-	Dir    Vector3f64
-	InvDir Vector3f64
-	Org    Point3f64
+type Ray[T constraints.Float] struct {
+	Dir    Vector3f[T]
+	InvDir Vector3f[T]
+	Org    Point3f[T]
 }
 
-func (r *Ray) IntersectionAABB(p Point3f64, b Bounds3f64) float64 {
+type (
+	Rayf32 = Ray[float32]
+	Rayf64 = Ray[float64]
+)
+
+func (r *Ray[T]) IntersectionAABB(p Point3f[T], b Bounds3f[T]) T {
 	t1 := (p.X - b.Min.X - r.Org.X) * r.InvDir.X
 	t2 := (p.X + b.Max.X - r.Org.X) * r.InvDir.X
 
-	tmin := math.Min(t1, t2)
-	tmax := math.Max(t1, t2)
+	tmin := min(t1, t2)
+	tmax := max(t1, t2)
 
 	t1 = (p.Y - b.Min.Y - r.Org.Y) * r.InvDir.Y
 	t2 = (p.Y + b.Max.Y - r.Org.Y) * r.InvDir.Y
 
-	tmin = math.Max(tmin, math.Min(math.Min(t1, t2), tmax))
-	tmax = math.Min(tmax, math.Max(math.Max(t1, t2), tmin))
+	tmin = max(tmin, min(min(t1, t2), tmax))
+	tmax = min(tmax, max(max(t1, t2), tmin))
 
 	t1 = (p.Z - b.Min.Z - r.Org.Z) * r.InvDir.Z
 	t2 = (p.Z + b.Max.Z - r.Org.Z) * r.InvDir.Z
 
-	tmin = math.Max(math.Max(tmin, math.Min(math.Min(t1, t2), tmax)), 0.0)
-	tmax = math.Min(tmax, math.Max(math.Max(t1, t2), tmin))
+	tmin = max(max(tmin, min(min(t1, t2), tmax)), 0.0)
+	tmax = min(tmax, max(max(t1, t2), tmin))
 
 	if tmax > tmin {
 		return tmin
 	}
 
-	return math.NaN()
+	return T(math.NaN())
 }

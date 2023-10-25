@@ -18,44 +18,51 @@ package gmath
 
 import (
 	"math"
+
+	"golang.org/x/exp/constraints"
 )
 
-type Point3f64 struct {
-	X, Y, Z float64
+type Point3f[T constraints.Float] struct {
+	X, Y, Z T
 }
 
-func Point3f64FromArray(a [3]float64) Point3f64 {
-	return Point3f64{
+type (
+	Point3f32 = Point3f[float32]
+	Point3f64 = Point3f[float64]
+)
+
+func Point3fFromArray[T constraints.Float](a [3]T) Point3f[T] {
+	return Point3f[T]{
 		X: a[0],
 		Y: a[1],
 		Z: a[2],
 	}
 }
 
-func (p Point3f64) VectorTo(p2 Point3f64) Vector3f64 {
-	return Vector3f64{
+func (p Point3f[T]) VectorTo(p2 Point3f[T]) Vector3f[T] {
+	return Vector3f[T]{
 		X: p2.X - p.X,
 		Y: p2.Y - p.Y,
 		Z: p2.Z - p.Z,
 	}
 }
 
-func (p Point3f64) Translate(v Vector3f64) Point3f64 {
-	return Point3f64{
+func (p Point3f[T]) Translate(v Vector3f[T]) Point3f[T] {
+	return Point3f[T]{
 		X: p.X + v.X,
 		Y: p.Y + v.Y,
 		Z: p.Z + v.Z,
 	}
 }
 
-func (p Point3f64) IsNAN() bool {
-	return math.IsNaN(p.X) || math.IsNaN(p.Y) || math.IsNaN(p.Z)
+func (p Point3f[T]) IsNAN() bool {
+	return math.IsNaN(float64(p.X)) || math.IsNaN(float64(p.Y)) || math.IsNaN(float64(p.Z))
 }
 
-func (p Point3f64) ToArray() [3]float64 {
-	return [3]float64{p.X, p.Y, p.Z}
+func (p Point3f[T]) ToArray() [3]T {
+	return [3]T{p.X, p.Y, p.Z}
 }
 
-func (p Point3f64) ToArrayf32() [3]float32 {
+func (p Point3f[T]) ToArrayf32() [3]float32 {
 	return [3]float32{float32(p.X), float32(p.Y), float32(p.Z)}
 }

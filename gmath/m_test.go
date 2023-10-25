@@ -25,8 +25,8 @@ import (
 	"testing"
 )
 
-func (m Matrix4f64) MultiplyPoint(p Point3f64) Point3f64 {
-	return Point3f64{
+func (m Matrix4x4f[T]) MultiplyPoint(p Point3f[T]) Point3f[T] {
+	return Point3f[T]{
 		X: m[0][0]*p.X + m[0][1]*p.Y + m[0][2]*p.Z + m[0][3],
 		Y: m[1][0]*p.X + m[1][1]*p.Y + m[1][2]*p.Z + m[1][3],
 		Z: m[2][0]*p.X + m[2][1]*p.Y + m[2][2]*p.Z + m[2][3],
@@ -35,30 +35,30 @@ func (m Matrix4f64) MultiplyPoint(p Point3f64) Point3f64 {
 
 func TestMatrix(t *testing.T) {
 	for i := 0; i < 1e6; i++ {
-		tr := Transform{}
-		target := Point3f64{rand.Float64(), rand.Float64(), rand.Float64()}
+		tr := Transform[float32]{}
+		target := Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 
-		tr.Pos = Point3f64{rand.Float64(), rand.Float64(), rand.Float64()}
-		tr.Rot = QuaternionFromEuler(rand.Float64(), rand.Float64(), rand.Float64())
-		tr.Scale = Vector3f64{rand.Float64(), rand.Float64(), rand.Float64()}
+		tr.Pos = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
+		tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32())
+		tr.Scale = Vector3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 
-		tp := Vector3f64(tr.TransformPoint(target))
-		mm := Vector3f64(tr.ModelMatrix().MultiplyPoint(target))
+		tp := Vector3f[float32](tr.TransformPoint(target))
+		mm := Vector3f[float32](tr.ModelMatrix().MultiplyPoint(target))
 
-		if tp.Subtract(mm).Magnitude() > 0.00000001 {
+		if tp.Subtract(mm).Magnitude() > 0.000001 {
 			t.Fatal(tp, mm)
 		}
 	}
 }
 
 func TestMatrixTranspose(t *testing.T) {
-	tr := Transform{Pos: Point3f64{X: 2, Y: 3, Z: 4}}
+	tr := Transform[float32]{Pos: Point3f[float32]{X: 2, Y: 3, Z: 4}}
 	got := tr.TranslationMatrix().Transpose()
-	want := Matrix4f64{
-		[4]float64{1, 0, 0, 0},
-		[4]float64{0, 1, 0, 0},
-		[4]float64{0, 0, 1, 0},
-		[4]float64{2, 3, 4, 1},
+	want := Matrix4x4f[float32]{
+		[4]float32{1, 0, 0, 0},
+		[4]float32{0, 1, 0, 0},
+		[4]float32{0, 0, 1, 0},
+		[4]float32{2, 3, 4, 1},
 	}
 
 	if got != want {
@@ -68,25 +68,25 @@ func TestMatrixTranspose(t *testing.T) {
 
 func TestMatrixInvert(t *testing.T) {
 	for i := 0; i < 1e6; i++ {
-		tr := Transform{}
-		tr.Pos = Point3f64{rand.Float64(), rand.Float64(), rand.Float64()}
-		tr.Rot = QuaternionFromEuler(rand.Float64(), rand.Float64(), rand.Float64()).Normalize()
-		tr.Scale = Vector3f64{1, 1, 1}
+		tr := Transform[float32]{}
+		tr.Pos = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
+		tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32()).Normalize()
+		tr.Scale = Vector3f[float32]{1, 1, 1}
 
 		m := tr.ModelMatrix()
 		mI := m.Invert()
 
 		got := m.Multiply(mI)
-		want := Matrix4f64{
-			[4]float64{1, 0, 0, 0},
-			[4]float64{0, 1, 0, 0},
-			[4]float64{0, 0, 1, 0},
-			[4]float64{0, 0, 0, 1},
+		want := Matrix4x4f[float32]{
+			[4]float32{1, 0, 0, 0},
+			[4]float32{0, 1, 0, 0},
+			[4]float32{0, 0, 1, 0},
+			[4]float32{0, 0, 0, 1},
 		}
 
 		for i := 0; i < 4; i++ {
 			for j := 0; j < 4; j++ {
-				if math.Abs(got[i][j]-want[i][j]) > 1e-15 {
+				if math.Abs(float64(got[i][j]-want[i][j])) > 1e-6 {
 					t.Fatalf("Want %+v but got %+v", want, got)
 				}
 			}
@@ -96,11 +96,11 @@ func TestMatrixInvert(t *testing.T) {
 
 func TestMatrixModel(t *testing.T) {
 	for i := 0; i < 1e6; i++ {
-		tr := Transform{}
+		tr := Transform[float32]{}
 
-		tr.Pos = Point3f64{rand.Float64(), rand.Float64(), rand.Float64()}
-		tr.Rot = QuaternionFromEuler(rand.Float64(), rand.Float64(), rand.Float64())
-		tr.Scale = Vector3f64{rand.Float64(), rand.Float64(), rand.Float64()}
+		tr.Pos = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
+		tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32())
+		tr.Scale = Vector3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 
 		m := tr.ModelMatrix()
 		m2 := tr.TranslationMatrix().Multiply(tr.RotationMatrix().Multiply(tr.ScaleMatrix()))
@@ -113,12 +113,12 @@ func TestMatrixModel(t *testing.T) {
 
 func TestMatrixView(t *testing.T) {
 	for i := 0; i < 1e6; i++ {
-		tr := Transform{}
+		tr := Transform[float32]{}
 
-		tr.Pos = Point3f64{rand.Float64(), rand.Float64(), rand.Float64()}
-		tr.Rot = QuaternionFromEuler(rand.Float64(), rand.Float64(), rand.Float64())
+		tr.Pos = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
+		tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32())
 
-		c := Camera{Transform: tr}
+		c := Camera[float32]{Transform: tr}
 
 		tr.Rot.X = -tr.Rot.X
 		tr.Rot.Y = -tr.Rot.Y
@@ -141,14 +141,14 @@ func TestMatrixView(t *testing.T) {
 }
 
 func BenchmarkMatrix(b *testing.B) {
-	tr := Transform{}
-	target := Point3f64{rand.Float64(), rand.Float64(), rand.Float64()}
+	tr := Transform[float32]{}
+	target := Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 
-	tr.Pos = Point3f64{rand.Float64(), rand.Float64(), rand.Float64()}
-	tr.Rot = QuaternionFromEuler(rand.Float64(), rand.Float64(), rand.Float64())
-	tr.Scale = Vector3f64{rand.Float64(), rand.Float64(), rand.Float64()}
+	tr.Pos = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
+	tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32())
+	tr.Scale = Vector3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 
-	c := Camera{Transform: tr, FOV: rand.Float64(), SizeX: rand.Float64(), SizeY: rand.Float64()}
+	c := Camera[float32]{Transform: tr, FOV: rand.Float32(), SizeX: rand.Float32(), SizeY: rand.Float32()}
 
 	b.Run("TransformPoint", func(b *testing.B) {
 		b.Run("Slow", func(b *testing.B) {
