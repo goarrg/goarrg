@@ -32,8 +32,6 @@ The following list of dependencies assume you are using the make package to inst
 | OS | API | Dependencies |
 | -- | -- | -- |
 | Ubuntu | gl | sudo apt-get install libglu1-mesa-dev mesa-common-dev |
-| Ubuntu_amd64 | vk | Vulkan SDK |
-| Windows_amd64 | vk | Vulkan SDK |
 
 ## Cross Compile
 There is cross compile support for the supported platforms, assuming you installed a C/C++ cross compiler with the correct file names. To cross compile to other platforms, or to use a non default toolchain, you need to set the `CC`/`CXX`/`AR` environmental variables. For Windows, you also need to set `RC`.
