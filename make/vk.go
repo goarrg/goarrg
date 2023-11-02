@@ -17,17 +17,17 @@ limitations under the License.
 package goarrg
 
 import (
-	"bytes"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"goarrg.com/toolchain"
 	"goarrg.com/toolchain/cgodep"
+	"goarrg.com/toolchain/git"
 	"goarrg.com/toolchain/golang"
 )
 
 const (
+	vkHeadersURL   = "https://github.com/KhronosGroup/Vulkan-Headers.git"
 	vkHeadersBuild = "-goarrg0"
 )
 
@@ -39,22 +39,19 @@ type VkHeadersConfig struct {
 
 func installVkHeaders(c VkHeadersConfig) error {
 	installDir := cgodep.InstallDir("vulkan-headers", toolchain.Target{}, toolchain.BuildRelease)
-	var headHash string
+	var ref git.Ref
 	if c.Branch == "" {
-		branches, err := toolchain.RunOutput("git", "ls-remote", "--heads", "--sort=-version:refname", "https://github.com/KhronosGroup/Vulkan-Headers.git", "*sdk-*")
+		refs, err := git.GetRemoteHeads(vkHeadersURL, "*sdk-*")
 		if err != nil {
 			return err
 		}
-		headHash = string(branches[:bytes.IndexAny(branches, " \t")])
-		i := bytes.Index(branches, []byte("refs/heads/")) + 11
-		j := bytes.Index(branches[i:], []byte("\n"))
-		c.Branch = strings.TrimSpace(string(branches[i : i+j]))
+		ref = refs[0]
 	} else {
-		output, err := toolchain.RunOutput("git", "ls-remote", "--heads", "--sort=-version:refname", "https://github.com/KhronosGroup/Vulkan-Headers.git", c.Branch)
+		refs, err := git.GetRemoteHeads(vkHeadersURL, c.Branch)
 		if err != nil {
 			return err
 		}
-		headHash = string(output[:bytes.IndexAny(output, " \t")])
+		ref = refs[0]
 	}
 
 	{
@@ -68,38 +65,21 @@ func installVkHeaders(c VkHeadersConfig) error {
 				hash := version[j+1 : i]
 				build := version[i:]
 
-				if branch == c.Branch && hash == headHash && build == vkHeadersBuild {
+				if branch == ref.Name && hash == ref.Hash && build == vkHeadersBuild {
 					return nil
 				}
 			}
 		}
 	}
 
-	if stat, err := os.Stat(filepath.Join(installDir, ".git")); err != nil || !stat.IsDir() {
-		os.RemoveAll(installDir)
-		if err := os.MkdirAll(installDir, 0o755); err != nil {
-			return err
-		}
-		if err := toolchain.Run("git", "clone", "--branch", c.Branch, "--depth=1", "https://github.com/KhronosGroup/Vulkan-Headers.git", installDir); err != nil {
-			return err
-		}
-	}
-	if err := toolchain.RunDir(installDir, "git", "fetch", "origin", "--depth=1", "refs/heads/"+c.Branch); err != nil {
-		return err
-	}
-	if err := toolchain.RunDir(installDir, "git", "-c", "advice.detachedHead=false", "checkout", "FETCH_HEAD"); err != nil {
-		return err
-	}
-	if err := toolchain.RunDir(installDir, "git", "clean", "-q", "-f", "-d"); err != nil {
-		return err
-	}
-	hash, err := toolchain.RunDirOutput(installDir, "git", "rev-parse", "HEAD")
+	err := git.CloneOrFetch(vkHeadersURL, installDir, ref)
 	if err != nil {
 		return err
 	}
+
 	golang.SetShouldCleanCache()
 	return cgodep.WriteMetaFile("vulkan-headers", toolchain.Target{}, toolchain.BuildRelease, cgodep.Meta{
-		Version: c.Branch + "-" + strings.TrimSpace(string(hash)) + vkHeadersBuild, Flags: cgodep.Flags{
+		Version: ref.Name + "-" + ref.Hash + vkHeadersBuild, Flags: cgodep.Flags{
 			CFlags: []string{"-I" + filepath.Join(installDir, "include")},
 		},
 	})
