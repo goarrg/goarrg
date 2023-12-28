@@ -36,11 +36,19 @@ func (p Point3i) VectorTo(p2 Point3i) Vector3i {
 	}
 }
 
-func (p Point3i) Translate(v Vector3i) Point3i {
+func (p Point3i) Add(v Vector3i) Point3i {
 	return Point3i{
 		X: p.X + v.X,
 		Y: p.Y + v.Y,
 		Z: p.Z + v.Z,
+	}
+}
+
+func (p Point3i) Subtract(v Vector3i) Point3i {
+	return Point3i{
+		X: p.X - v.X,
+		Y: p.Y - v.Y,
+		Z: p.Z - v.Z,
 	}
 }
 

@@ -62,7 +62,7 @@ func TestMatrixTranspose(t *testing.T) {
 	}
 
 	if got != want {
-		t.Fatalf("Want %+v but got %+v", want, got)
+		t.Fatalf("Want\n%+v\nbut got\n%+v", want, got)
 	}
 }
 
@@ -70,7 +70,7 @@ func TestMatrixInvert(t *testing.T) {
 	for i := 0; i < 1e6; i++ {
 		tr := Transform[float32]{}
 		tr.Pos = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
-		tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32()).Normalize()
+		tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32())
 		tr.Scale = Vector3f[float32]{1, 1, 1}
 
 		m := tr.ModelMatrix()
@@ -87,7 +87,7 @@ func TestMatrixInvert(t *testing.T) {
 		for i := 0; i < 4; i++ {
 			for j := 0; j < 4; j++ {
 				if math.Abs(float64(got[i][j]-want[i][j])) > 1e-6 {
-					t.Fatalf("Want %+v but got %+v", want, got)
+					t.Fatalf("Want\n%+v\nbut got\n%+v", want, got)
 				}
 			}
 		}
@@ -106,7 +106,7 @@ func TestMatrixModel(t *testing.T) {
 		m2 := tr.TranslationMatrix().Multiply(tr.RotationMatrix().Multiply(tr.ScaleMatrix()))
 
 		if m != m2 {
-			t.Fatal(m, m2)
+			t.Fatalf("Want\n%+v\nbut got\n%+v", m2, m)
 		}
 	}
 }
@@ -135,7 +135,48 @@ func TestMatrixView(t *testing.T) {
 		m2 := c.ViewMatrix()
 
 		if m != m2 {
-			t.Fatal("\n", m, "\n", m2)
+			t.Fatalf("Want\n%+v\nbut got\n%+v", m, m2)
+		}
+
+		m3 := c.ViewInverseMatrix()
+		got := m2.Multiply(m3)
+		want := Matrix4x4f[float32]{
+			[4]float32{1, 0, 0, 0},
+			[4]float32{0, 1, 0, 0},
+			[4]float32{0, 0, 1, 0},
+			[4]float32{0, 0, 0, 1},
+		}
+
+		for i := 0; i < 4; i++ {
+			for j := 0; j < 4; j++ {
+				if math.Abs(float64(got[i][j]-want[i][j])) > 1e-6 {
+					t.Fatalf("Want\n%+v\nbut got\n%+v", want, got)
+				}
+			}
+		}
+	}
+}
+
+func TestMatrixPerspective(t *testing.T) {
+	for i := 0; i < 1e6; i++ {
+		c := Camera[float32]{SizeX: 1920, SizeY: 1080, FOV: math.Pi * rand.Float32()}
+		zNear := rand.Float32()
+		m := c.PerspectiveMatrix(zNear)
+		m2 := c.PerspectiveInverseMatrix(zNear)
+		got := m.Multiply(m2)
+		want := Matrix4x4f[float32]{
+			[4]float32{1, 0, 0, 0},
+			[4]float32{0, 1, 0, 0},
+			[4]float32{0, 0, 1, 0},
+			[4]float32{0, 0, 0, 1},
+		}
+
+		for i := 0; i < 4; i++ {
+			for j := 0; j < 4; j++ {
+				if math.Abs(float64(got[i][j]-want[i][j])) > 1e-6 {
+					t.Fatalf("Want\n%+v\nbut got\n%+v", want, got)
+				}
+			}
 		}
 	}
 }

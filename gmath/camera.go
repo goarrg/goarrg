@@ -35,7 +35,7 @@ type (
 	Cameraf64 = Camera[float64]
 )
 
-func (c *Camera[T]) ScreenPointToRay(x, y int) Ray[T] {
+func (c *Camera[T]) ScreenPointToPerspectiveRay(x, y int) Ray[T] {
 	dir := Vector3f[T]{
 		X: T(x) - ((c.SizeX - 1) / 2),
 		Y: ((c.SizeY - 1) / 2) - T(y),
@@ -94,24 +94,56 @@ func (c *Camera[T]) ViewMatrix() Matrix4x4f[T] {
 	}
 }
 
-func (c *Camera[T]) PerspectiveMatrix() Matrix4x4f[T] {
+func (c *Camera[T]) ViewInverseMatrix() Matrix4x4f[T] {
+	x2 := c.Transform.Rot.X * c.Transform.Rot.X * 2
+	y2 := c.Transform.Rot.Y * c.Transform.Rot.Y * 2
+	z2 := c.Transform.Rot.Z * c.Transform.Rot.Z * 2
+
+	xy := c.Transform.Rot.X * c.Transform.Rot.Y * 2
+	wz := c.Transform.Rot.W * c.Transform.Rot.Z * 2
+	xz := c.Transform.Rot.X * c.Transform.Rot.Z * 2
+	wy := c.Transform.Rot.W * c.Transform.Rot.Y * 2
+	yz := c.Transform.Rot.Y * c.Transform.Rot.Z * 2
+	wx := c.Transform.Rot.W * c.Transform.Rot.X * 2
+
+	m0 := Vector3f[T]{
+		X: 1 - y2 - z2, Y: xy - wz, Z: xz + wy,
+	}
+
+	m1 := Vector3f[T]{
+		X: xy + wz, Y: 1 - x2 - z2, Z: yz - wx,
+	}
+
+	m2 := Vector3f[T]{
+		X: xz - wy, Y: yz + wx, Z: 1 - x2 - y2,
+	}
+
+	return Matrix4x4f[T]{
+		{m0.X, m0.Y, m0.Z, c.Transform.Pos.X},
+		{m1.X, m1.Y, m1.Z, c.Transform.Pos.Y},
+		{m2.X, m2.Y, m2.Z, c.Transform.Pos.Z},
+		{0, 0, 0, 1},
+	}
+}
+
+func (c *Camera[T]) PerspectiveMatrix(zNear T) Matrix4x4f[T] {
 	t := T(math.Tan(float64(c.FOV * 0.5)))
 
 	return Matrix4x4f[T]{
 		{1 / ((c.SizeX / c.SizeY) * t), 0, 0, 0},
 		{0, 1 / t, 0, 0},
-		{0, 0, 0, 1},
+		{0, 0, 0, zNear},
 		{0, 0, 1, 0},
 	}
 }
 
-func (c *Camera[T]) PerspectiveInverseMatrix() Matrix4x4f[T] {
+func (c *Camera[T]) PerspectiveInverseMatrix(zNear T) Matrix4x4f[T] {
 	t := T(math.Tan(float64(c.FOV * 0.5)))
 
 	return Matrix4x4f[T]{
 		{((c.SizeX / c.SizeY) * t), 0, 0, 0},
 		{0, t, 0, 0},
 		{0, 0, 0, 1},
-		{0, 0, 1, 0},
+		{0, 0, 1 / zNear, 0},
 	}
 }

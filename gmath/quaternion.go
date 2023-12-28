@@ -31,7 +31,7 @@ type (
 	Quaternionf64 = Quaternion[float64]
 )
 
-// QuaternionFromEuler is creates a quaternion from eular rotation in the z x y order.
+// QuaternionFromEuler is creates a quaternion from euler rotation in the z x y order.
 func QuaternionFromEuler[T constraints.Float](x, y, z T) Quaternion[T] {
 	x *= 0.5
 	y *= 0.5

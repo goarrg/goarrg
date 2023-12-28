@@ -38,7 +38,7 @@ func TestC(t *testing.T) {
 
 	for x := 0; x < (int)(c.SizeX); x++ {
 		for y := 0; y < (int)(c.SizeY); y++ {
-			have := c.ScreenPointToRay(x, y).Dir
+			have := c.ScreenPointToPerspectiveRay(x, y).Dir
 			if round(have) != round(want[x][y]) {
 				t.Fatalf("[%d, %d] = %v != %v\n", x, y, have, want[x][y])
 			}
@@ -55,6 +55,6 @@ func BenchmarkC(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = c.ScreenPointToRay(1, 1)
+		_ = c.ScreenPointToPerspectiveRay(1, 1)
 	}
 }

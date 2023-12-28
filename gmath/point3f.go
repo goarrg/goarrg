@@ -47,11 +47,19 @@ func (p Point3f[T]) VectorTo(p2 Point3f[T]) Vector3f[T] {
 	}
 }
 
-func (p Point3f[T]) Translate(v Vector3f[T]) Point3f[T] {
+func (p Point3f[T]) Add(v Vector3f[T]) Point3f[T] {
 	return Point3f[T]{
 		X: p.X + v.X,
 		Y: p.Y + v.Y,
 		Z: p.Z + v.Z,
+	}
+}
+
+func (p Point3f[T]) Subtract(v Vector3f[T]) Point3f[T] {
+	return Point3f[T]{
+		X: p.X - v.X,
+		Y: p.Y - v.Y,
+		Z: p.Z - v.Z,
 	}
 }
 
