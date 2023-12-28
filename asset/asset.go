@@ -17,12 +17,13 @@ limitations under the License.
 package asset
 
 import (
-	"bufio"
 	"bytes"
+	"io"
 	"io/fs"
 	"math"
 	"os"
 	"runtime"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -129,10 +130,9 @@ func (i *fileinfo) Sys() any {
 }
 
 type (
-	reader = *bufio.Reader
-	File   struct {
-		reader
-		mmap mmap
+	File struct {
+		reader *bytes.Reader
+		mmap   mmap
 	}
 )
 
@@ -150,6 +150,54 @@ func (f *File) Size() int {
 
 func (f *File) Stat() (fs.FileInfo, error) {
 	return &f.mmap.info, nil
+}
+
+func (f *File) Len() int {
+	return f.reader.Len()
+}
+
+func (f *File) Discard(n int64) (discarded int64, err error) {
+	return f.Seek(n, io.SeekCurrent)
+}
+
+func (f *File) Peek(n int) ([]byte, error) {
+	i := f.Size() - f.Len()
+	if (i + n) > f.Size() {
+		return nil, io.EOF
+	}
+	return slices.Clone(f.mmap.sys.bytes()[i : i+n]), nil
+}
+
+func (f *File) Read(b []byte) (n int, err error) {
+	return f.reader.Read(b)
+}
+
+func (f *File) ReadAt(b []byte, off int64) (n int, err error) {
+	return f.reader.ReadAt(b, off)
+}
+
+func (f *File) ReadByte() (byte, error) {
+	return f.reader.ReadByte()
+}
+
+func (f *File) ReadRune() (ch rune, size int, err error) {
+	return f.reader.ReadRune()
+}
+
+func (f *File) Seek(offset int64, whence int) (int64, error) {
+	return f.reader.Seek(offset, whence)
+}
+
+func (f *File) UnreadByte() error {
+	return f.reader.UnreadByte()
+}
+
+func (f *File) UnreadRune() error {
+	return f.reader.UnreadRune()
+}
+
+func (f *File) WriteTo(w io.Writer) (n int64, err error) {
+	return f.reader.WriteTo(w)
 }
 
 func (f *File) Close() error {
@@ -177,7 +225,7 @@ func Load(name string) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	f := File{reader: bufio.NewReader(bytes.NewReader(m.sys.bytes())), mmap: m}
+	f := File{reader: bytes.NewReader(m.sys.bytes()), mmap: m}
 	runtime.SetFinalizer(&f, (*File).Close)
 
 	return &f, nil
