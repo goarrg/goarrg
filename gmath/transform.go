@@ -26,6 +26,7 @@ type Transform[T constraints.Float] struct {
 	Pos   Point3f[T]
 	Rot   Quaternion[T]
 	Scale Vector3f[T]
+	Pivot Point3f[T]
 }
 
 type (
@@ -34,7 +35,7 @@ type (
 )
 
 func (t *Transform[T]) TransformPoint(p Point3f[T]) Point3f[T] {
-	return t.Pos.Translate(t.Rot.Rotate(Vector3f[T](p).Scale(t.Scale)))
+	return t.Pos.Add(t.Rot.Rotate(Vector3f[T](p.Subtract(Vector3f[T](t.Pivot))).Scale(t.Scale)))
 }
 
 func (t *Transform[T]) TransformVector(v Vector3f[T]) Vector3f[T] {
@@ -82,6 +83,15 @@ func (t *Transform[T]) LookAt(up Vector3f[T], target Point3f[T]) {
 	t.Rot.X = (m2.X + m0.Z) * s
 	t.Rot.Y = (m2.Y + m1.Z) * s
 	t.Rot.W = (m0.Y - m1.X) * s
+}
+
+func (t *Transform[T]) PivotMatrix() Matrix4x4f[T] {
+	return Matrix4x4f[T]{
+		{1, 0, 0, -t.Pivot.X},
+		{0, 1, 0, -t.Pivot.Y},
+		{0, 0, 1, -t.Pivot.Z},
+		{0, 0, 0, 1},
+	}
 }
 
 func (t *Transform[T]) TranslationMatrix() Matrix4x4f[T] {
@@ -137,19 +147,53 @@ func (t *Transform[T]) ModelMatrix() Matrix4x4f[T] {
 	m0 := Vector3f[T]{
 		X: 1 - y2 - z2, Y: xy - wz, Z: xz + wy,
 	}.Scale(t.Scale)
-
 	m1 := Vector3f[T]{
 		X: xy + wz, Y: 1 - x2 - z2, Z: yz - wx,
 	}.Scale(t.Scale)
-
 	m2 := Vector3f[T]{
 		X: xz - wy, Y: yz + wx, Z: 1 - x2 - y2,
 	}.Scale(t.Scale)
 
 	return Matrix4x4f[T]{
-		{m0.X, m0.Y, m0.Z, t.Pos.X},
-		{m1.X, m1.Y, m1.Z, t.Pos.Y},
-		{m2.X, m2.Y, m2.Z, t.Pos.Z},
+		{m0.X, m0.Y, m0.Z, t.Pos.X - m0.Dot(Vector3f[T](t.Pivot))},
+		{m1.X, m1.Y, m1.Z, t.Pos.Y - m1.Dot(Vector3f[T](t.Pivot))},
+		{m2.X, m2.Y, m2.Z, t.Pos.Z - m2.Dot(Vector3f[T](t.Pivot))},
+		{0, 0, 0, 1},
+	}
+}
+
+func (t *Transform[T]) ModelInverseMatrix() Matrix4x4f[T] {
+	rot := t.Rot
+
+	rot.X = -rot.X
+	rot.Y = -rot.Y
+	rot.Z = -rot.Z
+
+	x2 := rot.X * rot.X * 2
+	y2 := rot.Y * rot.Y * 2
+	z2 := rot.Z * rot.Z * 2
+
+	xy := rot.X * rot.Y * 2
+	wz := rot.W * rot.Z * 2
+	xz := rot.X * rot.Z * 2
+	wy := rot.W * rot.Y * 2
+	yz := rot.Y * rot.Z * 2
+	wx := rot.W * rot.X * 2
+
+	m0 := Vector3f[T]{
+		X: 1 - y2 - z2, Y: xy - wz, Z: xz + wy,
+	}.ScaleInverseUniform(t.Scale.X)
+	m1 := Vector3f[T]{
+		X: xy + wz, Y: 1 - x2 - z2, Z: yz - wx,
+	}.ScaleInverseUniform(t.Scale.Y)
+	m2 := Vector3f[T]{
+		X: xz - wy, Y: yz + wx, Z: 1 - x2 - y2,
+	}.ScaleInverseUniform(t.Scale.Z)
+
+	return Matrix4x4f[T]{
+		{m0.X, m0.Y, m0.Z, t.Pivot.X - m0.Dot(Vector3f[T](t.Pos))},
+		{m1.X, m1.Y, m1.Z, t.Pivot.Y - m1.Dot(Vector3f[T](t.Pos))},
+		{m2.X, m2.Y, m2.Z, t.Pivot.Z - m2.Dot(Vector3f[T](t.Pos))},
 		{0, 0, 0, 1},
 	}
 }

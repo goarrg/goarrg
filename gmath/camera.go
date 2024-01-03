@@ -28,6 +28,8 @@ type Camera[T constraints.Float] struct {
 	SizeX T
 	SizeY T
 	FOV   T
+
+	ZNear T
 }
 
 type (
@@ -77,11 +79,9 @@ func (c *Camera[T]) ViewMatrix() Matrix4x4f[T] {
 	m0 := Vector3f[T]{
 		X: 1 - y2 - z2, Y: xy - wz, Z: xz + wy,
 	}
-
 	m1 := Vector3f[T]{
 		X: xy + wz, Y: 1 - x2 - z2, Z: yz - wx,
 	}
-
 	m2 := Vector3f[T]{
 		X: xz - wy, Y: yz + wx, Z: 1 - x2 - y2,
 	}
@@ -109,11 +109,9 @@ func (c *Camera[T]) ViewInverseMatrix() Matrix4x4f[T] {
 	m0 := Vector3f[T]{
 		X: 1 - y2 - z2, Y: xy - wz, Z: xz + wy,
 	}
-
 	m1 := Vector3f[T]{
 		X: xy + wz, Y: 1 - x2 - z2, Z: yz - wx,
 	}
-
 	m2 := Vector3f[T]{
 		X: xz - wy, Y: yz + wx, Z: 1 - x2 - y2,
 	}
@@ -126,24 +124,24 @@ func (c *Camera[T]) ViewInverseMatrix() Matrix4x4f[T] {
 	}
 }
 
-func (c *Camera[T]) PerspectiveMatrix(zNear T) Matrix4x4f[T] {
+func (c *Camera[T]) PerspectiveMatrix() Matrix4x4f[T] {
 	t := T(math.Tan(float64(c.FOV * 0.5)))
 
 	return Matrix4x4f[T]{
 		{1 / ((c.SizeX / c.SizeY) * t), 0, 0, 0},
 		{0, 1 / t, 0, 0},
-		{0, 0, 0, zNear},
+		{0, 0, 0, c.ZNear},
 		{0, 0, 1, 0},
 	}
 }
 
-func (c *Camera[T]) PerspectiveInverseMatrix(zNear T) Matrix4x4f[T] {
+func (c *Camera[T]) PerspectiveInverseMatrix() Matrix4x4f[T] {
 	t := T(math.Tan(float64(c.FOV * 0.5)))
 
 	return Matrix4x4f[T]{
 		{((c.SizeX / c.SizeY) * t), 0, 0, 0},
 		{0, t, 0, 0},
 		{0, 0, 0, 1},
-		{0, 0, 1 / zNear, 0},
+		{0, 0, 1 / c.ZNear, 0},
 	}
 }

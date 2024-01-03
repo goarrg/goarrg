@@ -38,15 +38,16 @@ func TestMatrix(t *testing.T) {
 		tr := Transform[float32]{}
 		target := Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 
+		tr.Pivot = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 		tr.Pos = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 		tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32())
 		tr.Scale = Vector3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 
-		tp := Vector3f[float32](tr.TransformPoint(target))
-		mm := Vector3f[float32](tr.ModelMatrix().MultiplyPoint(target))
+		want := Vector3f[float32](tr.TransformPoint(target))
+		got := Vector3f[float32](tr.ModelMatrix().MultiplyPoint(target))
 
-		if tp.Subtract(mm).Magnitude() > 0.000001 {
-			t.Fatal(tp, mm)
+		if want.Subtract(got).Magnitude() > 1e-6 {
+			t.Fatalf("Want\n%+v\nbut got\n%+v", want, got)
 		}
 	}
 }
@@ -69,6 +70,7 @@ func TestMatrixTranspose(t *testing.T) {
 func TestMatrixInvert(t *testing.T) {
 	for i := 0; i < 1e6; i++ {
 		tr := Transform[float32]{}
+		tr.Pivot = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 		tr.Pos = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 		tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32())
 		tr.Scale = Vector3f[float32]{1, 1, 1}
@@ -98,15 +100,43 @@ func TestMatrixModel(t *testing.T) {
 	for i := 0; i < 1e6; i++ {
 		tr := Transform[float32]{}
 
+		tr.Pivot = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 		tr.Pos = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 		tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32())
 		tr.Scale = Vector3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 
 		m := tr.ModelMatrix()
-		m2 := tr.TranslationMatrix().Multiply(tr.RotationMatrix().Multiply(tr.ScaleMatrix()))
+		// test ModelMatrix()
+		{
+			want := tr.TranslationMatrix().Multiply(tr.RotationMatrix().Multiply(tr.ScaleMatrix().Multiply(tr.PivotMatrix())))
 
-		if m != m2 {
-			t.Fatalf("Want\n%+v\nbut got\n%+v", m2, m)
+			for i := 0; i < 4; i++ {
+				for j := 0; j < 4; j++ {
+					if math.Abs(float64(want[i][j]-m[i][j])) > 1e-6 {
+						t.Fatalf("Want\n%+v\nbut got\n%+v", want, m)
+					}
+				}
+			}
+		}
+
+		// test ModelInverseMatrix()
+		{
+			m2 := tr.ModelInverseMatrix()
+			got := m.Multiply(m2)
+			want := Matrix4x4f[float32]{
+				[4]float32{1, 0, 0, 0},
+				[4]float32{0, 1, 0, 0},
+				[4]float32{0, 0, 1, 0},
+				[4]float32{0, 0, 0, 1},
+			}
+
+			for i := 0; i < 4; i++ {
+				for j := 0; j < 4; j++ {
+					if math.Abs(float64(got[i][j]-want[i][j])) > 1e-6 {
+						t.Fatalf("Want\n%+v\nbut got\n%+v", want, got)
+					}
+				}
+			}
 		}
 	}
 }
@@ -120,37 +150,43 @@ func TestMatrixView(t *testing.T) {
 
 		c := Camera[float32]{Transform: tr}
 
-		tr.Rot.X = -tr.Rot.X
-		tr.Rot.Y = -tr.Rot.Y
-		tr.Rot.Z = -tr.Rot.Z
+		m := c.ViewMatrix()
+		// test ViewMatrix()
+		{
+			tr := tr
+			tr.Rot.X = -tr.Rot.X
+			tr.Rot.Y = -tr.Rot.Y
+			tr.Rot.Z = -tr.Rot.Z
 
-		rm := tr.RotationMatrix()
-		tm := tr.TranslationMatrix()
-		m := rm.Multiply(tm)
+			rm := tr.RotationMatrix()
+			tm := tr.TranslationMatrix()
+			want := rm.Multiply(tm)
 
-		m[0][3] = -m[0][3]
-		m[1][3] = -m[1][3]
-		m[2][3] = -m[2][3]
+			want[0][3] = -want[0][3]
+			want[1][3] = -want[1][3]
+			want[2][3] = -want[2][3]
 
-		m2 := c.ViewMatrix()
-
-		if m != m2 {
-			t.Fatalf("Want\n%+v\nbut got\n%+v", m, m2)
+			if want != m {
+				t.Fatalf("Want\n%+v\nbut got\n%+v", want, m)
+			}
 		}
 
-		m3 := c.ViewInverseMatrix()
-		got := m2.Multiply(m3)
-		want := Matrix4x4f[float32]{
-			[4]float32{1, 0, 0, 0},
-			[4]float32{0, 1, 0, 0},
-			[4]float32{0, 0, 1, 0},
-			[4]float32{0, 0, 0, 1},
-		}
+		// test ViewInverseMatrix()
+		{
+			m2 := c.ViewInverseMatrix()
+			got := m.Multiply(m2)
+			want := Matrix4x4f[float32]{
+				[4]float32{1, 0, 0, 0},
+				[4]float32{0, 1, 0, 0},
+				[4]float32{0, 0, 1, 0},
+				[4]float32{0, 0, 0, 1},
+			}
 
-		for i := 0; i < 4; i++ {
-			for j := 0; j < 4; j++ {
-				if math.Abs(float64(got[i][j]-want[i][j])) > 1e-6 {
-					t.Fatalf("Want\n%+v\nbut got\n%+v", want, got)
+			for i := 0; i < 4; i++ {
+				for j := 0; j < 4; j++ {
+					if math.Abs(float64(got[i][j]-want[i][j])) > 1e-6 {
+						t.Fatalf("Want\n%+v\nbut got\n%+v", want, got)
+					}
 				}
 			}
 		}
@@ -159,10 +195,9 @@ func TestMatrixView(t *testing.T) {
 
 func TestMatrixPerspective(t *testing.T) {
 	for i := 0; i < 1e6; i++ {
-		c := Camera[float32]{SizeX: 1920, SizeY: 1080, FOV: math.Pi * rand.Float32()}
-		zNear := rand.Float32()
-		m := c.PerspectiveMatrix(zNear)
-		m2 := c.PerspectiveInverseMatrix(zNear)
+		c := Camera[float32]{SizeX: 1920, SizeY: 1080, FOV: math.Pi * rand.Float32(), ZNear: rand.Float32()}
+		m := c.PerspectiveMatrix()
+		m2 := c.PerspectiveInverseMatrix()
 		got := m.Multiply(m2)
 		want := Matrix4x4f[float32]{
 			[4]float32{1, 0, 0, 0},
@@ -227,6 +262,12 @@ func BenchmarkMatrix(b *testing.B) {
 			}
 		})
 		globalM = m
+		b.Run("Inverse", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				m = tr.ModelInverseMatrix()
+			}
+		})
+		globalM = m
 	})
 
 	b.Run("View", func(b *testing.B) {
@@ -238,20 +279,27 @@ func BenchmarkMatrix(b *testing.B) {
 
 				rm := tr.RotationMatrix()
 				tm := tr.TranslationMatrix()
-				m := rm.Multiply(tm)
+				m = rm.Multiply(tm)
 
 				m[0][3] = -m[0][3]
 				m[1][3] = -m[1][3]
 				m[2][3] = -m[2][3]
 			}
 		})
+		globalM = m
 		b.Run("Optimized", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				m = c.ViewMatrix()
 			}
 		})
+		globalM = m
+		b.Run("Inverse", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				m = c.ViewInverseMatrix()
+			}
+		})
+		globalM = m
 	})
-	globalM = m
 
 	m2 := tr.ModelMatrix()
 
