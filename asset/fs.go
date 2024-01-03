@@ -18,12 +18,22 @@ package asset
 
 import (
 	"io/fs"
+	"path/filepath"
 )
 
-type FileSystem struct{}
+type FileSystem struct {
+	dir string
+}
 
-var FS = &FileSystem{}
+var FS = &FileSystem{dir: "./"}
 
-func (*FileSystem) Open(name string) (fs.File, error) {
-	return Load(name)
+func (f *FileSystem) Open(name string) (fs.File, error) {
+	if !fs.ValidPath(name) {
+		return nil, fs.ErrInvalid
+	}
+	return Load(filepath.Join(f.dir, name))
+}
+
+func DirFS(dir string) *FileSystem {
+	return &FileSystem{dir: dir}
 }
