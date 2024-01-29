@@ -16,10 +16,17 @@ limitations under the License.
 
 package gmath
 
-type Rectf64 struct {
-	X, Y, W, H float64
+import "golang.org/x/exp/constraints"
+
+type Rect[T constraints.Integer | constraints.Float] struct {
+	X, Y, W, H T
 }
 
-type Recti struct {
-	X, Y, W, H int
-}
+type (
+	Rectint = Rect[int]
+	Recti32 = Rect[int32]
+	Recti64 = Rect[int64]
+
+	Rectf32 = Rect[float32]
+	Rectf64 = Rect[float64]
+)

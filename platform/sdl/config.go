@@ -39,7 +39,7 @@ type AudioConfig struct {
 
 type WindowConfig struct {
 	Title string
-	Rect  gmath.Recti
+	Rect  gmath.Rectint
 	Mode  WindowMode
 }
 

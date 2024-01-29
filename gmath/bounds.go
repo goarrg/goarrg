@@ -28,7 +28,13 @@ type (
 	Bounds3f64 = Bounds3f[float64]
 )
 
-type Bounds3i struct {
-	Min Vector3i
-	Max Vector3i
+type Bounds3i[T constraints.Integer] struct {
+	Min Vector3i[T]
+	Max Vector3i[T]
 }
+
+type (
+	Bounds3int = Bounds3i[int]
+	Bounds3i32 = Bounds3i[int32]
+	Bounds3i64 = Bounds3i[int64]
+)

@@ -110,7 +110,7 @@ func (m *mouse) update(e C.goEvent) {
 	}
 
 	m.currentState = uint8(C.SDL_GetGlobalMouseState(&cX, &cY)) << 1
-	pos := gmath.Point3i{X: int(cX), Y: int(cY)}
+	pos := gmath.Point3int{X: int(cX), Y: int(cY)}
 
 	if !Platform.display.pointInsideWindow(pos) {
 		m.currentState = 0

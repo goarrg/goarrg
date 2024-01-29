@@ -16,82 +16,94 @@ limitations under the License.
 
 package gmath
 
-type Vector3i struct {
-	X, Y, Z int
+import "golang.org/x/exp/constraints"
+
+type Vector3i[T constraints.Integer] struct {
+	X, Y, Z T
 }
 
-func Vector3iFromArray(a [3]int) Vector3i {
-	return Vector3i{
+type (
+	Vector3int = Vector3i[int]
+	Vector3i32 = Vector3i[int32]
+	Vector3i64 = Vector3i[int64]
+)
+
+func Vector3iFromArray[T constraints.Integer](a [3]T) Vector3i[T] {
+	return Vector3i[T]{
 		X: a[0],
 		Y: a[1],
 		Z: a[2],
 	}
 }
 
-func (v Vector3i) Add(v2 Vector3i) Vector3i {
-	return Vector3i{
+func (v Vector3i[T]) Add(v2 Vector3i[T]) Vector3i[T] {
+	return Vector3i[T]{
 		X: v.X + v2.X,
 		Y: v.Y + v2.Y,
 		Z: v.Z + v2.Z,
 	}
 }
 
-func (v Vector3i) AddUniform(i int) Vector3i {
-	return Vector3i{
+func (v Vector3i[T]) AddUniform(i T) Vector3i[T] {
+	return Vector3i[T]{
 		X: v.X + i,
 		Y: v.Y + i,
 		Z: v.Z + i,
 	}
 }
 
-func (v Vector3i) Subtract(v2 Vector3i) Vector3i {
-	return Vector3i{
+func (v Vector3i[T]) Subtract(v2 Vector3i[T]) Vector3i[T] {
+	return Vector3i[T]{
 		X: v.X - v2.X,
 		Y: v.Y - v2.Y,
 		Z: v.Z - v2.Z,
 	}
 }
 
-func (v Vector3i) SubtractUniform(i int) Vector3i {
-	return Vector3i{
+func (v Vector3i[T]) SubtractUniform(i T) Vector3i[T] {
+	return Vector3i[T]{
 		X: v.X - i,
 		Y: v.Y - i,
 		Z: v.Z - i,
 	}
 }
 
-func (v Vector3i) Scale(v2 Vector3i) Vector3i {
-	return Vector3i{
+func (v Vector3i[T]) Scale(v2 Vector3i[T]) Vector3i[T] {
+	return Vector3i[T]{
 		X: v.X * v2.X,
 		Y: v.Y * v2.Y,
 		Z: v.Z * v2.Z,
 	}
 }
 
-func (v Vector3i) ScaleInverse(v2 Vector3i) Vector3i {
-	return Vector3i{
+func (v Vector3i[T]) ScaleInverse(v2 Vector3i[T]) Vector3i[T] {
+	return Vector3i[T]{
 		X: v.X / v2.X,
 		Y: v.Y / v2.Y,
 		Z: v.Z / v2.Z,
 	}
 }
 
-func (v Vector3i) ScaleUniform(s int) Vector3i {
-	return Vector3i{
+func (v Vector3i[T]) ScaleUniform(s T) Vector3i[T] {
+	return Vector3i[T]{
 		X: v.X * s,
 		Y: v.Y * s,
 		Z: v.Z * s,
 	}
 }
 
-func (v Vector3i) ScaleInverseUniform(s int) Vector3i {
-	return Vector3i{
+func (v Vector3i[T]) ScaleInverseUniform(s T) Vector3i[T] {
+	return Vector3i[T]{
 		X: v.X / s,
 		Y: v.Y / s,
 		Z: v.Z / s,
 	}
 }
 
-func (v Vector3i) ToArray() [3]int {
-	return [3]int{v.X, v.Y, v.Z}
+func (v Vector3i[T]) ToArray() [3]T {
+	return [3]T{v.X, v.Y, v.Z}
+}
+
+func (v Vector3i[T]) ToArrayi32() [3]int32 {
+	return [3]int32{int32(v.X), int32(v.Y), int32(v.Z)}
 }

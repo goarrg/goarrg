@@ -22,25 +22,30 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-type Grid[T constraints.Float] struct {
+type Grid[T constraints.Float, U constraints.Integer] struct {
 	Pos        Point3f[T]
 	Bounds     Bounds3f[T]
 	Scale      T
-	CellBounds Bounds3i
+	CellBounds Bounds3i[U]
 }
 
 type (
-	Gridf32 = Grid[float32]
-	Gridf64 = Grid[float64]
+	Grid32 = Grid[float32, int32]
+	Grid64 = Grid[float64, int64]
 )
 
-type GridCell struct {
-	X int
-	Y int
-	Z int
+type GridCell[T constraints.Integer] struct {
+	X T
+	Y T
+	Z T
 }
 
-func (g *Grid[T]) Init(cellCount Vector3i, cellSize T) {
+type (
+	GridCelli32 = GridCell[int32]
+	GridCelli64 = GridCell[int64]
+)
+
+func (g *Grid[T, U]) Init(cellCount Vector3i[U], cellSize T) {
 	g.Scale = cellSize
 
 	if cellCount.X > 0 {
@@ -62,19 +67,19 @@ func (g *Grid[T]) Init(cellCount Vector3i, cellSize T) {
 	}
 }
 
-func (g *Grid[T]) WorldPosToCell(p Point3f[T]) GridCell {
-	x := int(math.Floor(float64((p.X - g.Pos.X - g.Bounds.Min.X) / g.Scale)))
-	y := int(math.Floor(float64((p.Y - g.Pos.Y - g.Bounds.Min.Y) / g.Scale)))
-	z := int(math.Floor(float64((p.Z - g.Pos.Z - g.Bounds.Min.Z) / g.Scale)))
+func (g *Grid[T, U]) WorldPosToCell(p Point3f[T]) GridCell[U] {
+	x := U(math.Floor(float64((p.X - g.Pos.X - g.Bounds.Min.X) / g.Scale)))
+	y := U(math.Floor(float64((p.Y - g.Pos.Y - g.Bounds.Min.Y) / g.Scale)))
+	z := U(math.Floor(float64((p.Z - g.Pos.Z - g.Bounds.Min.Z) / g.Scale)))
 
-	return GridCell{
+	return GridCell[U]{
 		X: x,
 		Y: y,
 		Z: z,
 	}
 }
 
-func (g *Grid[T]) CellToWorldPos(gc GridCell) Point3f[T] {
+func (g *Grid[T, U]) CellToWorldPos(gc GridCell[U]) Point3f[T] {
 	return Point3f[T]{
 		X: (T(gc.X) * g.Scale) + g.Bounds.Min.X + (0.5 * g.Scale) + g.Pos.X,
 		Y: (T(gc.Y) * g.Scale) + g.Bounds.Min.Y + (0.5 * g.Scale) + g.Pos.Y,
@@ -82,7 +87,7 @@ func (g *Grid[T]) CellToWorldPos(gc GridCell) Point3f[T] {
 	}
 }
 
-func (gc GridCell) Clamp(bounds Bounds3i) GridCell {
+func (gc GridCell[T]) Clamp(bounds Bounds3i[T]) GridCell[T] {
 	if gc.X < bounds.Min.X {
 		gc.X = bounds.Min.X
 	}
@@ -110,8 +115,8 @@ func (gc GridCell) Clamp(bounds Bounds3i) GridCell {
 	return gc
 }
 
-func (gc GridCell) ToArray() [3]int {
-	return [3]int{
+func (gc GridCell[T]) ToArray() [3]T {
+	return [3]T{
 		gc.X,
 		gc.Y,
 		gc.Z,

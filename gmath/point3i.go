@@ -16,42 +16,50 @@ limitations under the License.
 
 package gmath
 
-type Point3i struct {
-	X, Y, Z int
+import "golang.org/x/exp/constraints"
+
+type Point3i[T constraints.Integer] struct {
+	X, Y, Z T
 }
 
-func Point3iFromArray(a [3]int) Point3i {
-	return Point3i{
+type (
+	Point3int = Point3i[int]
+	Point3i32 = Point3i[int32]
+	Point3i64 = Point3i[int64]
+)
+
+func Point3iFromArray[T constraints.Integer](a [3]T) Point3i[T] {
+	return Point3i[T]{
 		X: a[0],
 		Y: a[1],
 		Z: a[2],
 	}
 }
 
-func (p Point3i) VectorTo(p2 Point3i) Vector3i {
-	return Vector3i{
+func (p Point3i[T]) VectorTo(p2 Point3i[T]) Vector3i[T] {
+	return Vector3i[T]{
 		X: p2.X - p.X,
 		Y: p2.Y - p.Y,
 		Z: p2.Z - p.Z,
 	}
 }
 
-func (p Point3i) Add(v Vector3i) Point3i {
-	return Point3i{
+func (p Point3i[T]) Add(v Vector3i[T]) Point3i[T] {
+	return Point3i[T]{
 		X: p.X + v.X,
 		Y: p.Y + v.Y,
 		Z: p.Z + v.Z,
 	}
 }
 
-func (p Point3i) Subtract(v Vector3i) Point3i {
-	return Point3i{
+func (p Point3i[T]) Subtract(v Vector3i[T]) Point3i[T] {
+	return Point3i[T]{
 		X: p.X - v.X,
 		Y: p.Y - v.Y,
 		Z: p.Z - v.Z,
 	}
 }
 
-func (p Point3i) ToArray() [3]int {
-	return [3]int{p.X, p.Y, p.Z}
+func (p Point3i[T]) ToArray() [3]T {
+	return [3]T{p.X, p.Y, p.Z}
 }

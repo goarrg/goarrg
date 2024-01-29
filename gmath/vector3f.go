@@ -31,7 +31,7 @@ type (
 	Vector3f64 = Vector3f[float64]
 )
 
-func Vector3FromArray[T constraints.Float](a [3]T) Vector3f[T] {
+func Vector3fFromArray[T constraints.Float](a [3]T) Vector3f[T] {
 	return Vector3f[T]{
 		X: a[0],
 		Y: a[1],

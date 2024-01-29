@@ -60,13 +60,13 @@ func (d *displaySystem) hasMouseFocus() bool {
 	return d.mainWindow.mouseFocus
 }
 
-func (d *displaySystem) pointInsideWindow(p gmath.Point3i) bool {
+func (d *displaySystem) pointInsideWindow(p gmath.Point3int) bool {
 	return p.X >= d.mainWindow.bounds.Min.X && p.X <= d.mainWindow.bounds.Max.X &&
 		p.Y >= d.mainWindow.bounds.Min.Y && p.Y <= d.mainWindow.bounds.Max.Y
 }
 
-func (d *displaySystem) globalPointToRelativePoint(p gmath.Point3i) gmath.Point3i {
-	return gmath.Point3i(gmath.Vector3i(p).Subtract(d.mainWindow.bounds.Min))
+func (d *displaySystem) globalPointToRelativePoint(p gmath.Point3int) gmath.Point3int {
+	return gmath.Point3int(gmath.Vector3int(p).Subtract(d.mainWindow.bounds.Min))
 }
 
 func (d *displaySystem) destroy() {
