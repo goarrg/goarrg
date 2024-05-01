@@ -316,7 +316,6 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 	}
 
 	cfg.Spec.Channels, err = channelCountToList(int(got.channels))
-
 	if err != nil {
 		return debug.ErrorWrapf(err, "Failed to init SDL audio")
 	}
