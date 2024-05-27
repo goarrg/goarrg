@@ -25,6 +25,7 @@ import (
 
 var (
 	modulePath    string
+	moduleDir     string
 	moduleDataDir string
 )
 
@@ -51,7 +52,15 @@ func WorkingModulePath() string {
 }
 
 /*
-WorkingModuleDataDir returns a folder within WorkingModulePath() that can be
+WorkingModulePath returns the filepath of the module in the working
+directory at the time of init.
+*/
+func WorkingModuleDir() string {
+	return moduleDir
+}
+
+/*
+WorkingModuleDataDir returns a folder within WorkingModuleDir() that can be
 used to store data.
 */
 func WorkingModuleDataDir() string {
