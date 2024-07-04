@@ -16,8 +16,7 @@
             "gosec",
             "makezero",
             "musttag",
-            "noctx",
-            "scopelint"
+            "noctx"
         ],
         "presets": [
             "bugs"

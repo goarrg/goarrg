@@ -111,12 +111,12 @@ func (en *errorNode) Format(s fmt.State, verb rune) {
 	case 'v':
 		if next := errors.Unwrap(en); next != nil {
 			fmt.Fprintf(s, "%v", next)
-			s.Write([]byte("\n\n"))
+			_, _ = s.Write([]byte("\n\n"))
 		}
 
-		s.Write([]byte(en.msg + "\n\t" + en.stack.String()))
+		_, _ = s.Write([]byte(en.msg + "\n\t" + en.stack.String()))
 
 	case 's':
-		s.Write([]byte(en.Error()))
+		_, _ = s.Write([]byte(en.Error()))
 	}
 }
