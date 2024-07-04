@@ -24,13 +24,13 @@ import (
 )
 
 func BenchmarkR(b *testing.B) {
-	c := Camera[float32]{
+	c := PerspectiveCamera[float32]{
 		SizeX: 1920,
 		SizeY: 1080,
 		FOV:   90,
 	}
 
-	r := c.ScreenPointToPerspectiveRay(1, 1)
+	r := c.ScreenPointToRay(1, 1)
 	aabb := Bounds3f[float32]{
 		Min: Vector3f[float32]{-100, -100, -100},
 		Max: Vector3f[float32]{100, 100, 100},

@@ -24,7 +24,7 @@ import (
 )
 
 func TestC(t *testing.T) {
-	c := Camera[float32]{
+	c := PerspectiveCamera[float32]{
 		SizeX: 3,
 		SizeY: 3,
 		FOV:   DegToRad[float32](90),
@@ -38,7 +38,7 @@ func TestC(t *testing.T) {
 
 	for x := 0; x < (int)(c.SizeX); x++ {
 		for y := 0; y < (int)(c.SizeY); y++ {
-			have := c.ScreenPointToPerspectiveRay(x, y).Dir
+			have := c.ScreenPointToRay(x, y).Dir
 			if round(have) != round(want[x][y]) {
 				t.Fatalf("[%d, %d] = %v != %v\n", x, y, have, want[x][y])
 			}
@@ -47,7 +47,7 @@ func TestC(t *testing.T) {
 }
 
 func BenchmarkC(b *testing.B) {
-	c := Camera[float32]{
+	c := PerspectiveCamera[float32]{
 		SizeX: 1920,
 		SizeY: 1080,
 		FOV:   90,
@@ -55,6 +55,6 @@ func BenchmarkC(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = c.ScreenPointToPerspectiveRay(1, 1)
+		_ = c.ScreenPointToRay(1, 1)
 	}
 }

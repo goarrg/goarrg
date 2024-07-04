@@ -148,7 +148,7 @@ func TestMatrixView(t *testing.T) {
 		tr.Pos = Point3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 		tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32())
 
-		c := Camera[float32]{Transform: tr}
+		c := PerspectiveCamera[float32]{Transform: tr}
 
 		m := c.ViewMatrix()
 		// test ViewMatrix()
@@ -195,9 +195,12 @@ func TestMatrixView(t *testing.T) {
 
 func TestMatrixPerspective(t *testing.T) {
 	for i := 0; i < 1e6; i++ {
-		c := Camera[float32]{SizeX: 1920, SizeY: 1080, FOV: math.Pi * rand.Float32(), ZNear: rand.Float32()}
-		m := c.PerspectiveMatrix()
-		m2 := c.PerspectiveInverseMatrix()
+		c := PerspectiveCamera[float32]{
+			SizeX: rand.Float32() * 1920, SizeY: rand.Float32() * 1080,
+			FOV: math.Pi * rand.Float32(), ZNear: rand.Float32(),
+		}
+		m := c.ProjectionMatrix()
+		m2 := c.ProjectionInverseMatrix()
 		got := m.Multiply(m2)
 		want := Matrix4x4f[float32]{
 			[4]float32{1, 0, 0, 0},
@@ -229,7 +232,7 @@ func BenchmarkMatrix(b *testing.B) {
 	tr.Rot = QuaternionFromEuler(rand.Float32(), rand.Float32(), rand.Float32())
 	tr.Scale = Vector3f[float32]{rand.Float32(), rand.Float32(), rand.Float32()}
 
-	c := Camera[float32]{Transform: tr, FOV: rand.Float32(), SizeX: rand.Float32(), SizeY: rand.Float32()}
+	c := PerspectiveCamera[float32]{Transform: tr, FOV: rand.Float32(), SizeX: rand.Float32(), SizeY: rand.Float32()}
 
 	var p Point3f32
 	var m Matrix4x4f32
