@@ -43,6 +43,43 @@ func (v Vector3f[T]) IsNAN() bool {
 	return math.IsNaN(float64(v.X)) || math.IsNaN(float64(v.Y)) || math.IsNaN(float64(v.Z))
 }
 
+func (v Vector3f[T]) Abs() Vector3f[T] {
+	if v.X < 0 {
+		v.X = -v.X
+	}
+	if v.Y < 0 {
+		v.Y = -v.Y
+	}
+	if v.Z < 0 {
+		v.Z = -v.Z
+	}
+	return v
+}
+
+func (v Vector3f[T]) Min(v2 Vector3f[T]) Vector3f[T] {
+	return Vector3f[T]{
+		X: min(v.X, v2.X),
+		Y: min(v.Y, v2.Y),
+		Z: min(v.Z, v2.Z),
+	}
+}
+
+func (v Vector3f[T]) Max(v2 Vector3f[T]) Vector3f[T] {
+	return Vector3f[T]{
+		X: max(v.X, v2.X),
+		Y: max(v.Y, v2.Y),
+		Z: max(v.Z, v2.Z),
+	}
+}
+
+func (v Vector3f[T]) Clamp(lo, hi Vector3f[T]) Vector3f[T] {
+	return Vector3f[T]{
+		X: max(lo.X, min(v.X, hi.X)),
+		Y: max(lo.Y, min(v.Y, hi.Y)),
+		Z: max(lo.Z, min(v.Z, hi.Z)),
+	}
+}
+
 func (v Vector3f[T]) Add(v2 Vector3f[T]) Vector3f[T] {
 	return Vector3f[T]{
 		X: v.X + v2.X,
