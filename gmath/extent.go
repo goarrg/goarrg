@@ -35,6 +35,12 @@ type (
 	Extent3u64  = Extent3[uint64]
 )
 
+func (e Extent3[T]) InRange(min, max Extent3[T]) bool {
+	return InRange(e.X, min.X, max.X) &&
+		InRange(e.Y, min.Y, max.Y) &&
+		InRange(e.Z, min.Z, max.Z)
+}
+
 func (e Extent3[T]) Volume() T {
 	return e.X * e.Y * e.Z
 }

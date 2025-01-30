@@ -29,3 +29,7 @@ func DegToRad[T constraints.Float](d T) T {
 func RadToDeg[T constraints.Float](r T) T {
 	return r * (180 / math.Pi)
 }
+
+func InRange[N constraints.Float | constraints.Integer](t, low, high N) bool {
+	return (t >= low) && (t <= high)
+}
