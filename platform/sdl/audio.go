@@ -208,7 +208,7 @@ func decodeWAV(a *asset.File) (audio.Spec, int, []float32, error) {
 
 	//nolint:staticcheck
 	if C.SDL_LoadWAV_RW(cR, 0, &cSpec, &cBuf, &cLen) == nil {
-		err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to decode WAV")
+		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to decode WAV")
 		C.SDL_ClearError()
 		return audio.Spec{}, 0, nil, err
 	}
@@ -224,7 +224,7 @@ func decodeWAV(a *asset.File) (audio.Spec, int, []float32, error) {
 
 	//nolint:staticcheck
 	if C.SDL_BuildAudioCVT(&cCVT, cSpec.format, cSpec.channels, cSpec.freq, C.AUDIO_F32SYS, cSpec.channels, cSpec.freq) < 0 {
-		err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to decode WAV")
+		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to decode WAV")
 		C.SDL_ClearError()
 		return audio.Spec{}, 0, nil, err
 	}
@@ -243,7 +243,7 @@ func decodeWAV(a *asset.File) (audio.Spec, int, []float32, error) {
 
 		//nolint:staticcheck
 		if C.SDL_ConvertAudio(&cCVT) < 0 {
-			err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to decode WAV")
+			err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to decode WAV")
 			C.SDL_ClearError()
 			return audio.Spec{}, 0, nil, err
 		}
@@ -276,7 +276,7 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 	}
 
 	if C.SDL_InitSubSystem(C.SDL_INIT_AUDIO) != 0 {
-		err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to init SDL audio")
+		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to init SDL audio")
 		C.SDL_ClearError()
 		return err
 	}
@@ -310,7 +310,7 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 	cAID := C.SDL_OpenAudioDevice(nil, 0, &want, &got, 0)
 
 	if cAID == 0 {
-		err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to init SDL audio")
+		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to init SDL audio")
 		C.SDL_ClearError()
 		return err
 	}

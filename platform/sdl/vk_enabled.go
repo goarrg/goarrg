@@ -167,7 +167,7 @@ func vkInit(r goarrg.VkRenderer) error {
 	{
 		cNumSDLExt := C.uint(0)
 		if C.SDL_Vulkan_GetInstanceExtensions(Platform.display.mainWindow.cWindow, &cNumSDLExt, nil) != C.SDL_TRUE {
-			err := debug.Errorf(C.GoString(C.SDL_GetError()))
+			err := debug.Errorf("%s", C.GoString(C.SDL_GetError()))
 			C.SDL_ClearError()
 			return err
 		}
@@ -177,7 +177,7 @@ func vkInit(r goarrg.VkRenderer) error {
 		ext := unsafe.Slice((**C.char)(unsafe.Pointer(cExt)), int(cNumSDLExt)+len(vkCfg.Extensions))
 
 		if C.SDL_Vulkan_GetInstanceExtensions(Platform.display.mainWindow.cWindow, &cNumSDLExt, cExt) != C.SDL_TRUE {
-			err := debug.Errorf(C.GoString(C.SDL_GetError()))
+			err := debug.Errorf("%s", C.GoString(C.SDL_GetError()))
 			C.SDL_ClearError()
 			return err
 		}
@@ -224,13 +224,13 @@ func vkInit(r goarrg.VkRenderer) error {
 				return debug.ErrorWrapf(debug.Errorf("Failed to find vulkan loader"), "Failed to create vk instance with config %#v", vkCfg)
 			}
 
-			return debug.ErrorWrapf(debug.Errorf(vkResultStr(ret)), "Failed to create vk instance with config %#v", vkCfg)
+			return debug.ErrorWrapf(debug.Errorf("%s", vkResultStr(ret)), "Failed to create vk instance with config %#v", vkCfg)
 		}
 
 		//nolint:staticcheck
 		if C.SDL_Vulkan_CreateSurface(Platform.display.mainWindow.cWindow, cInstance, &cSurface) != C.SDL_TRUE {
 			C.vkDestroyInstance(cInstance)
-			err := debug.Errorf(C.GoString(C.SDL_GetError()))
+			err := debug.Errorf("%s", C.GoString(C.SDL_GetError()))
 			C.SDL_ClearError()
 			return err
 		}

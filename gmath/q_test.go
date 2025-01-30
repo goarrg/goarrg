@@ -81,7 +81,6 @@ func TestQ(t *testing.T) {
 	wg.Add(count)
 
 	for i := 0; i < count; i++ {
-		i := i
 		go func() {
 			defer wg.Done()
 

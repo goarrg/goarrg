@@ -93,7 +93,7 @@ func glInit(r goarrg.GLRenderer) error {
 		C.SDL_ClearError()
 		Platform.logger.IPrintf("vsync enabled")
 	default:
-		err := debug.ErrorWrapf(debug.Errorf(C.GoString(C.SDL_GetError())), "Failed to enable vsync")
+		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to enable vsync")
 		C.SDL_ClearError()
 		return err
 	}

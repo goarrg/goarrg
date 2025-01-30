@@ -72,7 +72,7 @@ func (*platform) Init() error {
 
 		C.SDL_SetMainReady()
 		if C.SDL_Init(C.SDL_INIT_VIDEO) != 0 {
-			err = debug.Errorf(C.GoString(C.SDL_GetError()))
+			err = debug.Errorf("%s", C.GoString(C.SDL_GetError()))
 			C.SDL_ClearError()
 			return
 		}
