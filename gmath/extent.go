@@ -35,6 +35,6 @@ type (
 	Extent3u64  = Extent3[uint64]
 )
 
-func (e Extent3[T]) Area() T {
+func (e Extent3[T]) Volume() T {
 	return e.X * e.Y * e.Z
 }
