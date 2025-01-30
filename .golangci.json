@@ -3,7 +3,7 @@
         "enable": [
             "depguard",
             "dupl",
-            "exportloopref",
+            "copyloopvar",
             "gofumpt",
             "goimports",
             "govet",
