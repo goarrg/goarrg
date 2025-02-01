@@ -1,5 +1,5 @@
-//go:build !debug
-// +build !debug
+//go:build !goarrg_debug_enable_trace
+// +build !goarrg_debug_enable_trace
 
 /*
 Copyright 2020 The goARRG Authors.

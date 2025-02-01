@@ -1,5 +1,5 @@
-//go:build !debug
-// +build !debug
+//go:build !goarrg_build_debug
+// +build !goarrg_build_debug
 
 /*
 Copyright 2021 The goARRG Authors.

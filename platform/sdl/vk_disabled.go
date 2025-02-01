@@ -1,5 +1,5 @@
-//go:build disable_vk || !amd64
-// +build disable_vk !amd64
+//go:build goarrg_disable_vk || !amd64
+// +build goarrg_disable_vk !amd64
 
 /*
 Copyright 2020 The goARRG Authors.
