@@ -17,31 +17,88 @@ limitations under the License.
 package goarrg
 
 import (
+	"strings"
+
 	"goarrg.com/debug"
 	"goarrg.com/toolchain"
 	"goarrg.com/toolchain/golang"
 )
 
-type Config struct {
+type Dependencies struct {
 	Target    toolchain.Target
 	SDL       SDLConfig
 	VkHeaders VkHeadersConfig
 }
 
-func Install(c Config) {
-	if !golang.ValidTarget(c.Target) || !golang.CgoSupported(c.Target) {
-		panic(debug.Errorf("Invalid Target: %+v", c.Target))
+func Install(d Dependencies) {
+	if !golang.ValidTarget(d.Target) || !golang.CgoSupported(d.Target) {
+		panic(debug.Errorf("Invalid Target: %+v", d.Target))
 	}
-	if c.VkHeaders.Install {
-		err := installVkHeaders(c.VkHeaders)
+	if d.VkHeaders.Install {
+		err := installVkHeaders(d.VkHeaders)
 		if err != nil {
 			panic(debug.ErrorWrapf(err, "Failed to install vulkan-headers"))
 		}
 	}
-	if c.SDL.Install {
-		err := installSDL(c.Target, c.SDL)
+	if d.SDL.Install {
+		err := installSDL(d.Target, d.SDL)
 		if err != nil {
 			panic(debug.ErrorWrapf(err, "Failed to install SDL"))
 		}
 	}
+}
+
+/*
+DebugFeatures contains build options that affects debugging, they may or may not require toolchain.BuildDebug.
+*/
+type DebugFeatures struct {
+	/*
+		If true, activates the debug.Trace* functions, without it they do nothing.
+		Does not require toolchain.DebugBuild
+	*/
+	Trace bool
+}
+
+/*
+DisableFeatures contains build options that are enabled by default but are otherwise optional.
+*/
+type DisableFeatures struct {
+	OpenGL bool // If true, platform packages will not allow the initialization of OpenGL apps.
+	Vulkan bool // If true, platform packages will not allow the initialization of Vulkan apps.
+}
+type BuildOptions struct {
+	Build   toolchain.Build
+	Debug   DebugFeatures
+	Disable DisableFeatures
+}
+
+func BuildTags(b BuildOptions) string {
+	var str string
+
+	switch b.Build {
+	case toolchain.BuildRelease:
+		str = "goarrg_build_release,"
+	case toolchain.BuildDevelopment:
+		str = "goarrg_build_development,"
+	case toolchain.BuildDebug:
+		str = "goarrg_build_debug,"
+	default:
+		panic(debug.Errorf("Invalid build: %+v", b))
+	}
+
+	{
+		if b.Debug.Trace {
+			str += "goarrg_debug_enable_trace,"
+		}
+	}
+	{
+		if b.Disable.OpenGL {
+			str += "goarrg_disable_gl,"
+		}
+		if b.Disable.Vulkan {
+			str += "goarrg_disable_vk,"
+		}
+	}
+
+	return strings.TrimSuffix(str, ",")
 }
