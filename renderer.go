@@ -56,7 +56,9 @@ type VkConfig struct {
 type VkInstance interface {
 	Uintptr() uintptr
 	ProcAddr() uintptr
-	Surface() uintptr
+	// Creates a new VkSurfaceKHR, destroying the old one if called a second time onwards,
+	// caller is responsible for fulfilling any sync requirements
+	CreateSurface() (uint64, error)
 }
 
 type VkRenderer interface {

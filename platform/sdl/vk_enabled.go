@@ -1,5 +1,5 @@
-//go:build !goarrg_disable_vk && amd64
-// +build !goarrg_disable_vk,amd64
+//go:build !goarrg_disable_vk
+// +build !goarrg_disable_vk
 
 /*
 Copyright 2020 The goARRG Authors.
@@ -35,9 +35,20 @@ import (
 )
 
 type vkInstance struct {
-	procAddr uintptr
-	ptr      uintptr
-	surface  uintptr
+	procAddr  uintptr
+	cInstance C.VkInstance
+	cSurface  C.VkSurfaceKHR
+}
+
+func (vk *vkInstance) destroy() {
+	if vk.cSurface != C.VK_NULL_HANDLE {
+		C.vkDestroySurface(vk.cInstance, vk.cSurface)
+		vk.cSurface = C.VK_NULL_HANDLE
+	}
+	if vk.cInstance != nil {
+		C.vkDestroyInstance(vk.cInstance)
+		vk.cInstance = nil
+	}
 }
 
 func (vk *vkInstance) ProcAddr() uintptr {
@@ -45,11 +56,20 @@ func (vk *vkInstance) ProcAddr() uintptr {
 }
 
 func (vk *vkInstance) Uintptr() uintptr {
-	return vk.ptr
+	return uintptr(unsafe.Pointer(vk.cInstance))
 }
 
-func (vk *vkInstance) Surface() uintptr {
-	return vk.surface
+func (vk *vkInstance) CreateSurface() (uint64, error) {
+	if vk.cSurface != C.VK_NULL_HANDLE {
+		C.vkDestroySurface(vk.cInstance, vk.cSurface)
+	}
+	//nolint:staticcheck
+	if C.SDL_Vulkan_CreateSurface(Platform.display.mainWindow.cWindow, vk.cInstance, &vk.cSurface) != C.SDL_TRUE {
+		err := debug.Errorf("Failed to create surface: %s", C.GoString(C.SDL_GetError()))
+		C.SDL_ClearError()
+		return 0, err
+	}
+	return uint64(vk.cSurface), nil
 }
 
 func vkResultStr(code C.VkResult) string {
@@ -128,10 +148,9 @@ func vkResultStr(code C.VkResult) string {
 }
 
 type vkWindow struct {
-	cfg       goarrg.VkConfig
-	renderer  goarrg.VkRenderer
-	cInstance C.VkInstance
-	cSurface  C.VkSurfaceKHR
+	cfg        goarrg.VkConfig
+	renderer   goarrg.VkRenderer
+	vkInstance *vkInstance
 
 	windowW int
 	windowH int
@@ -160,14 +179,13 @@ func vkInit(r goarrg.VkRenderer) error {
 
 	vkCfg := r.VkConfig()
 	cInstance := C.VkInstance(nil)
-	cSurface := C.VkSurfaceKHR(nil)
 
 	Platform.logger.IPrintf("Renderer requested config: %+v", vkCfg)
 
 	{
 		cNumSDLExt := C.uint(0)
 		if C.SDL_Vulkan_GetInstanceExtensions(Platform.display.mainWindow.cWindow, &cNumSDLExt, nil) != C.SDL_TRUE {
-			err := debug.Errorf("%s", C.GoString(C.SDL_GetError()))
+			err := debug.Errorf("Failed to get list of SDL required vulkan extensions: %s", C.GoString(C.SDL_GetError()))
 			C.SDL_ClearError()
 			return err
 		}
@@ -177,7 +195,7 @@ func vkInit(r goarrg.VkRenderer) error {
 		ext := unsafe.Slice((**C.char)(unsafe.Pointer(cExt)), int(cNumSDLExt)+len(vkCfg.Extensions))
 
 		if C.SDL_Vulkan_GetInstanceExtensions(Platform.display.mainWindow.cWindow, &cNumSDLExt, cExt) != C.SDL_TRUE {
-			err := debug.Errorf("%s", C.GoString(C.SDL_GetError()))
+			err := debug.Errorf("Failed to get list of SDL required vulkan extensions: %s", C.GoString(C.SDL_GetError()))
 			C.SDL_ClearError()
 			return err
 		}
@@ -226,33 +244,23 @@ func vkInit(r goarrg.VkRenderer) error {
 
 			return debug.ErrorWrapf(debug.Errorf("%s", vkResultStr(ret)), "Failed to create vk instance with config %#v", vkCfg)
 		}
-
-		//nolint:staticcheck
-		if C.SDL_Vulkan_CreateSurface(Platform.display.mainWindow.cWindow, cInstance, &cSurface) != C.SDL_TRUE {
-			C.vkDestroyInstance(cInstance)
-			err := debug.Errorf("%s", C.GoString(C.SDL_GetError()))
-			C.SDL_ClearError()
-			return err
-		}
 	}
 
-	if err := r.VkInit(&vkInstance{
-		procAddr: uintptr(C.SDL_Vulkan_GetVkGetInstanceProcAddr()),
-		ptr:      uintptr(unsafe.Pointer(cInstance)),
-		surface:  uintptr(unsafe.Pointer(cSurface)),
-	}); err != nil {
-		C.vkDestroySurface(cInstance, cSurface)
-		C.vkDestroyInstance(cInstance)
+	window := &vkWindow{
+		cfg:      vkCfg,
+		renderer: r,
+		vkInstance: &vkInstance{
+			procAddr:  uintptr(C.SDL_Vulkan_GetVkGetInstanceProcAddr()),
+			cInstance: cInstance,
+		},
+	}
+
+	if err := r.VkInit(window.vkInstance); err != nil {
+		window.vkInstance.destroy()
 		return err
 	}
 
-	Platform.display.mainWindow.api = &vkWindow{
-		cfg:       vkCfg,
-		renderer:  r,
-		cInstance: cInstance,
-		cSurface:  cSurface,
-	}
-
+	Platform.display.mainWindow.api = window
 	Platform.display.mainWindow.api.resize(Platform.config.Window.Rect.W, Platform.config.Window.Rect.H)
 	Platform.logger.IPrintf("Created vk window")
 
@@ -273,6 +281,5 @@ func (vkw *vkWindow) resize(w int, h int) {
 }
 
 func (vkw *vkWindow) destroy() {
-	C.vkDestroySurface(vkw.cInstance, vkw.cSurface)
-	C.vkDestroyInstance(vkw.cInstance)
+	vkw.vkInstance.destroy()
 }
