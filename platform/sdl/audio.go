@@ -323,7 +323,7 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 	cfg.Spec.Frequency = int(got.freq)
 	cfg.BufferLength = int(got.samples)
 
-	if err := mixer.Init(cfg); err != nil {
+	if err := mixer.Init(platformInterface{}, cfg); err != nil {
 		return debug.ErrorWrapf(err, "Failed to init SDL audio")
 	}
 

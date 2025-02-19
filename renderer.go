@@ -44,7 +44,7 @@ type GLInstance interface {
 type GLRenderer interface {
 	Renderer
 	GLConfig() GLConfig
-	GLInit(GLInstance) error
+	GLInit(PlatformInterface, GLInstance) error
 }
 
 type VkConfig struct {
@@ -64,5 +64,5 @@ type VkInstance interface {
 type VkRenderer interface {
 	Renderer
 	VkConfig() VkConfig
-	VkInit(VkInstance) error
+	VkInit(PlatformInterface, VkInstance) error
 }

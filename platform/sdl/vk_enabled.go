@@ -255,7 +255,7 @@ func vkInit(r goarrg.VkRenderer) error {
 		},
 	}
 
-	if err := r.VkInit(window.vkInstance); err != nil {
+	if err := r.VkInit(platformInterface{}, window.vkInstance); err != nil {
 		window.vkInstance.destroy()
 		return err
 	}

@@ -32,7 +32,7 @@ type AudioConfig struct {
 
 type Audio interface {
 	AudioConfig() AudioConfig
-	Init(AudioConfig) error
+	Init(PlatformInterface, AudioConfig) error
 	Mix() (int, audio.Track)
 	Update()
 	Destroy()
@@ -40,8 +40,10 @@ type Audio interface {
 
 type audioNull struct{}
 
-func (audioNull) AudioConfig() AudioConfig { return AudioConfig{} }
-func (audioNull) Init(AudioConfig) error   { return nil }
-func (audioNull) Mix() (int, audio.Track)  { return 0, nil }
-func (audioNull) Update()                  {}
-func (audioNull) Destroy()                 {}
+var _ Audio = audioNull{}
+
+func (audioNull) AudioConfig() AudioConfig                  { return AudioConfig{} }
+func (audioNull) Init(PlatformInterface, AudioConfig) error { return nil }
+func (audioNull) Mix() (int, audio.Track)                   { return 0, nil }
+func (audioNull) Update()                                   {}
+func (audioNull) Destroy()                                  {}

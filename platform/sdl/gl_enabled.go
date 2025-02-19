@@ -98,7 +98,7 @@ func glInit(r goarrg.GLRenderer) error {
 		return err
 	}
 
-	if err := r.GLInit(&glInstance{}); err != nil {
+	if err := r.GLInit(platformInterface{}, &glInstance{}); err != nil {
 		return err
 	}
 

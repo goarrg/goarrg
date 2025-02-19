@@ -27,15 +27,31 @@ import (
 )
 
 type Platform interface {
-	Init() error
+	Init() (PlatformInterface, error)
 	AudioInit(Audio) error
 	DisplayInit(Renderer) error
 	Update()
 	Destroy()
 }
 
+/*
+PlatformInterface defines a set of functions all Platforms must support,
+this is to facilitate the creation of packages that only requires basic functionality
+without having a dependency on a specific Platform package.
+*/
+type PlatformInterface interface {
+	// Abort terminates the application and potentially creates a dump.
+	// May be implemented with a panic().
+	Abort()
+
+	// AbortPopup displays a popup in a platform specific manner, visually indicating an error to the user.
+	// Then terminates the application and potentially creates a dump.
+	// May be implemented with a panic().
+	AbortPopup(string, ...interface{})
+}
+
 type Program interface {
-	Init() error
+	Init(PlatformInterface) error
 	Update(float64)
 	Shutdown() bool
 	Destroy()
@@ -56,11 +72,12 @@ const (
 )
 
 var system struct {
-	logger   *debug.Logger
-	platform Platform
-	audio    Audio
-	renderer Renderer
-	program  Program
+	logger            *debug.Logger
+	platform          Platform
+	platformInterface PlatformInterface
+	audio             Audio
+	renderer          Renderer
+	program           Program
 
 	state int32
 }
@@ -91,7 +108,8 @@ func Run(cfg Config) error {
 	system.renderer = cfg.Renderer
 	system.program = cfg.Program
 
-	if err := system.platform.Init(); err != nil {
+	var err error
+	if system.platformInterface, err = system.platform.Init(); err != nil {
 		return debug.ErrorWrapf(err, "Failed to init platform")
 	}
 
@@ -113,7 +131,7 @@ func Run(cfg Config) error {
 		system.audio = audioNull{}
 	}
 
-	if err := system.program.Init(); err != nil {
+	if err := system.program.Init(system.platformInterface); err != nil {
 		return debug.ErrorWrapf(err, "Failed to init user program")
 	}
 

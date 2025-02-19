@@ -47,15 +47,16 @@ type platform struct {
 }
 
 var (
-	Platform = &platform{logger: debug.NewLogger("sdl")}
-	initOnce = sync.Once{}
+	Platform                 = &platform{logger: debug.NewLogger("sdl")}
+	_        goarrg.Platform = Platform
+	initOnce                 = sync.Once{}
 )
 
 func init() {
 	runtime.LockOSThread()
 }
 
-func (*platform) Init() error {
+func (*platform) Init() (goarrg.PlatformInterface, error) {
 	err := debug.Errorf("Init must be called only once")
 
 	initOnce.Do(func() {
@@ -83,7 +84,11 @@ func (*platform) Init() error {
 		Platform.logger.IPrintf("Platform initialized")
 	})
 
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	return platformInterface{}, nil
 }
 
 func (*platform) Update() {
@@ -110,4 +115,14 @@ func (*platform) Destroy() {
 	Platform.audio.destroy()
 	Platform.display.destroy()
 	C.SDL_Quit()
+}
+
+type platformInterface struct{}
+
+func (platformInterface) Abort() {
+	Abort()
+}
+
+func (platformInterface) AbortPopup(format string, args ...interface{}) {
+	AbortPopup(format, args...)
 }
