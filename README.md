@@ -21,7 +21,7 @@ However, there is nothing preventing you from creating a platform package to sup
 
 ## Dependencies
 
-goarrg requires go 1.21+<br>
+goarrg requires go 1.23+<br>
 The following list of dependencies assume you are using the make package to install the rest.
 | OS | Dependencies |
 | -- | -- |
@@ -36,7 +36,7 @@ The following list of dependencies assume you are using the make package to inst
 ## Cross Compile
 There is cross compile support for the supported platforms, assuming you installed a C/C++ cross compiler with the correct file names. To cross compile to other platforms, or to use a non default toolchain, you need to set the `CC`/`CXX`/`AR` environmental variables. For Windows, you also need to set `RC`.
 
-The `toolchain/gcc` package is there to help setup these environmental variables.
+The `toolchain/cc` package is there to help setup these environmental variables.
 
 ### Default Compiler Selection
 | Taraget Platform | Prefix |
@@ -46,9 +46,15 @@ The `toolchain/gcc` package is there to help setup these environmental variables
 | windows_386 | i686-w64-mingw32 |
 | windows_amd64 | x86_64-w64-mingw32 |
 
+#### GCC
 `CC={{.Prefix}}-gcc`<br>
 `CXX={{.Prefix}}-g++`<br>
 `AR={{.Prefix}}-gcc-ar`<br>
+#### Clang
+`CC={{.Prefix}}-clang`<br>
+`CXX={{.Prefix}}-clang++`<br>
+`AR={{.Prefix}}-llvm-ar`<br>
+
 **Windows Only:**<br>
 `RC={{.Prefix}}-windres`
 
