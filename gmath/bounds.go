@@ -18,9 +18,30 @@ package gmath
 
 import "golang.org/x/exp/constraints"
 
+type Bounds[T constraints.Float | constraints.Integer] struct {
+	Min T
+	Max T
+}
+
+func (b Bounds[T]) CheckValue(v T) bool {
+	return InRange(v, b.Min, b.Max)
+}
+
 type Bounds3f[T constraints.Float] struct {
 	Min Vector3f[T]
 	Max Vector3f[T]
+}
+
+func (b Bounds3f[T]) CheckPoint(p Point3f[T]) bool {
+	return InRange(p.X, b.Min.X, b.Max.X) &&
+		InRange(p.Y, b.Min.Y, b.Max.Y) &&
+		InRange(p.Z, b.Min.Z, b.Max.Z)
+}
+
+func (b Bounds3f[T]) CheckVector(v Vector3f[T]) bool {
+	return InRange(v.X, b.Min.X, b.Max.X) &&
+		InRange(v.Y, b.Min.Y, b.Max.Y) &&
+		InRange(v.Z, b.Min.Z, b.Max.Z)
 }
 
 type (
@@ -31,6 +52,18 @@ type (
 type Bounds3i[T constraints.Integer] struct {
 	Min Vector3i[T]
 	Max Vector3i[T]
+}
+
+func (b Bounds3i[T]) CheckPoint(p Point3i[T]) bool {
+	return InRange(p.X, b.Min.X, b.Max.X) &&
+		InRange(p.Y, b.Min.Y, b.Max.Y) &&
+		InRange(p.Z, b.Min.Z, b.Max.Z)
+}
+
+func (b Bounds3i[T]) CheckVector(v Vector3i[T]) bool {
+	return InRange(v.X, b.Min.X, b.Max.X) &&
+		InRange(v.Y, b.Min.Y, b.Max.Y) &&
+		InRange(v.Z, b.Min.Z, b.Max.Z)
 }
 
 type (
