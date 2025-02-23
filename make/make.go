@@ -25,27 +25,8 @@ import (
 )
 
 type Dependencies struct {
-	Target    toolchain.Target
 	SDL       SDLConfig
 	VkHeaders VkHeadersConfig
-}
-
-func Install(d Dependencies) {
-	if !golang.ValidTarget(d.Target) || !golang.CgoSupported(d.Target) {
-		panic(debug.Errorf("Invalid Target: %+v", d.Target))
-	}
-	if d.VkHeaders.Install {
-		err := installVkHeaders(d.VkHeaders)
-		if err != nil {
-			panic(debug.ErrorWrapf(err, "Failed to install vulkan-headers"))
-		}
-	}
-	if d.SDL.Install {
-		err := installSDL(d.Target, d.SDL)
-		if err != nil {
-			panic(debug.ErrorWrapf(err, "Failed to install SDL"))
-		}
-	}
 }
 
 /*
@@ -72,7 +53,13 @@ type BuildOptions struct {
 	Disable DisableFeatures
 }
 
-func BuildTags(b BuildOptions) string {
+type Config struct {
+	Target       toolchain.Target
+	Dependencies Dependencies
+	BuildOptions BuildOptions
+}
+
+func buildTags(b BuildOptions) string {
 	var str string
 
 	switch b.Build {
@@ -101,4 +88,27 @@ func BuildTags(b BuildOptions) string {
 	}
 
 	return strings.TrimSuffix(str, ",")
+}
+
+/*
+Install will install all optional dependencies indicated and does any required
+setup and then returns the required build tags to pass to `go build -tags=...`.
+*/
+func Install(c Config) string {
+	if !golang.ValidTarget(c.Target) || !golang.CgoSupported(c.Target) {
+		panic(debug.Errorf("Invalid Target: %+v", c.Target))
+	}
+	if c.Dependencies.VkHeaders.Install {
+		err := installVkHeaders(c.Dependencies.VkHeaders)
+		if err != nil {
+			panic(debug.ErrorWrapf(err, "Failed to install vulkan-headers"))
+		}
+	}
+	if c.Dependencies.SDL.Install {
+		err := installSDL(c.Target, c.Dependencies.SDL)
+		if err != nil {
+			panic(debug.ErrorWrapf(err, "Failed to install SDL"))
+		}
+	}
+	return buildTags(c.BuildOptions)
 }
