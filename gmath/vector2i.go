@@ -28,7 +28,7 @@ type (
 	Vector2i64 = Vector2i[int64]
 )
 
-func Vector2iFromArray[T constraints.Integer](a [3]T) Vector2i[T] {
+func Vector2iFromArray[T constraints.Integer](a [2]T) Vector2i[T] {
 	return Vector2i[T]{
 		X: a[0],
 		Y: a[1],

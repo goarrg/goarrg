@@ -27,6 +27,47 @@ func (b Bounds[T]) CheckValue(v T) bool {
 	return InRange(v, b.Min, b.Max)
 }
 
+type Bounds2f[T constraints.Float] struct {
+	Min Vector2f[T]
+	Max Vector2f[T]
+}
+
+func (b Bounds2f[T]) CheckPoint(p Point2f[T]) bool {
+	return InRange(p.X, b.Min.X, b.Max.X) &&
+		InRange(p.Y, b.Min.Y, b.Max.Y)
+}
+
+func (b Bounds2f[T]) CheckVector(v Vector2f[T]) bool {
+	return InRange(v.X, b.Min.X, b.Max.X) &&
+		InRange(v.Y, b.Min.Y, b.Max.Y)
+}
+
+type (
+	Bounds2f32 = Bounds2f[float32]
+	Bounds2f64 = Bounds2f[float64]
+)
+
+type Bounds2i[T constraints.Integer] struct {
+	Min Vector2i[T]
+	Max Vector2i[T]
+}
+
+func (b Bounds2i[T]) CheckPoint(p Point2i[T]) bool {
+	return InRange(p.X, b.Min.X, b.Max.X) &&
+		InRange(p.Y, b.Min.Y, b.Max.Y)
+}
+
+func (b Bounds2i[T]) CheckVector(v Vector2i[T]) bool {
+	return InRange(v.X, b.Min.X, b.Max.X) &&
+		InRange(v.Y, b.Min.Y, b.Max.Y)
+}
+
+type (
+	Bounds2int = Bounds2i[int]
+	Bounds2i32 = Bounds2i[int32]
+	Bounds2i64 = Bounds2i[int64]
+)
+
 type Bounds3f[T constraints.Float] struct {
 	Min Vector3f[T]
 	Max Vector3f[T]

@@ -18,6 +18,32 @@ package gmath
 
 import "golang.org/x/exp/constraints"
 
+type Extent2[T constraints.Integer | constraints.Float] struct {
+	X, Y T
+}
+
+type (
+	Extent2f32 = Extent2[float32]
+	Extent2f64 = Extent2[float64]
+
+	Extent2int = Extent2[int]
+	Extent2i32 = Extent2[int32]
+	Extent2i64 = Extent2[int64]
+
+	Extent2uint = Extent2[uint]
+	Extent2u32  = Extent2[uint32]
+	Extent2u64  = Extent2[uint64]
+)
+
+func (e Extent2[T]) InRange(min, max Extent2[T]) bool {
+	return InRange(e.X, min.X, max.X) &&
+		InRange(e.Y, min.Y, max.Y)
+}
+
+func (e Extent2[T]) Area() T {
+	return e.X * e.Y
+}
+
 type Extent3[T constraints.Integer | constraints.Float] struct {
 	X, Y, Z T
 }
