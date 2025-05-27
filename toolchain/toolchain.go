@@ -18,28 +18,17 @@ package toolchain
 
 import (
 	"runtime"
+
+	"goarrg.com/build"
 )
 
-type Build int
+type Build = build.Build
 
 const (
-	BuildRelease Build = iota
-	BuildDevelopment
-	BuildDebug
+	BuildRelease     = build.BuildRelease
+	BuildDevelopment = build.BuildDevelopment
+	BuildDebug       = build.BuildDebug
 )
-
-func (b Build) String() string {
-	switch b {
-	case BuildRelease:
-		return "release"
-	case BuildDevelopment:
-		return "dev"
-	case BuildDebug:
-		return "debug"
-	}
-
-	return ""
-}
 
 type Target struct {
 	OS   string
