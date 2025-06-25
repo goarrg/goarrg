@@ -24,6 +24,8 @@ package sdl
 import "C"
 
 import (
+	"math/bits"
+
 	"goarrg.com/gmath"
 	"goarrg.com/input"
 )
@@ -39,6 +41,26 @@ type mouse struct {
 
 func (m *mouse) Type() string {
 	return input.DeviceTypeMouse
+}
+
+func (m *mouse) Scan(mask input.ScanMask) input.DeviceAction {
+	if mask.HasBits(input.ScanValue) {
+		i := input.DeviceAction(bits.TrailingZeros8(m.currentState))
+		if i > 0 && i <= input.MouseForward {
+			return i
+		}
+	}
+	if mask.HasBits(input.ScanAxis) {
+		if m.ActionStartedFor(input.MouseWheel) {
+			return input.MouseWheel
+		}
+	}
+	if mask.HasBits(input.ScanCoords) {
+		if m.ActionStartedFor(input.MouseMotion) {
+			return input.MouseMotion
+		}
+	}
+	return 0
 }
 
 func (m *mouse) StateFor(a input.DeviceAction) input.State {

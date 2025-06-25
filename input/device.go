@@ -16,6 +16,11 @@ limitations under the License.
 
 package input
 
+/*
+DeviceAction is an ID representing actions a device has. e.g. keys on a keyboard
+or buttons on a mouse or mouse movement.
+The value 0 is reserved to indicate no action.
+*/
 type DeviceAction uint8
 
 const (
@@ -47,6 +52,13 @@ type Device interface {
 		documentation for said type and its' defined DeviceAction codes.
 	*/
 	Type() string
+
+	/*
+		Scan returns the action with the lowest value that was started this frame,
+		using mask to filter action types.
+		The value 0 represents no action happened.
+	*/
+	Scan(ScanMask) DeviceAction
 
 	/*
 		Returns the current frame's state of the action as either a input.Value,

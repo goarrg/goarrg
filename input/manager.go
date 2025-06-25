@@ -79,18 +79,26 @@ func DevicesOfType(t string) []Device {
 
 /*
 ScanMask represents a bitmask of the types of input events to scan for.
+Type is determined by the return value of StateFor(DeviceAction)
 */
 type ScanMask uint8
 
 const (
-	ScanValue = 1 << iota
+	ScanValue ScanMask = 1 << iota
 	ScanAxis
 	ScanCoords
+	ScanAll = ^ScanMask(0)
 )
+
+func (m ScanMask) HasBits(want ScanMask) bool {
+	return (m & want) == want
+}
 
 /*
 Scan returns the device and the action, using mask to filter action types,
 that had a DeviceAction triggered this frame or nil and 0.
+It is equivalent to calling Device.Scan(mask) on every registered device,
+returning the fist non 0 action.
 
 This is useful for input mapping without having to specifically code to
 support every device type.
@@ -106,26 +114,10 @@ func Scan(mask ScanMask) (device Device, action DeviceAction) {
 
 	manager.Range(func(key, value interface{}) bool {
 		for _, d := range value.([]Device) {
-			for i := DeviceAction(0); i < (^DeviceAction(0)); i++ {
-				if d.ActionStartedFor(i) {
-					switch d.StateFor(i).(type) {
-					case Value:
-						if mask&ScanValue == 0 {
-							continue
-						}
-					case Axis:
-						if mask&ScanAxis == 0 {
-							continue
-						}
-					case Coords:
-						if mask&ScanCoords == 0 {
-							continue
-						}
-					}
-					device = d
-					action = i
-					return false
-				}
+			if i := d.Scan(mask); i > 0 {
+				device = d
+				action = i
+				return false
 			}
 		}
 		return true

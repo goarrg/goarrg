@@ -24,25 +24,35 @@ package sdl
 import "C"
 
 import (
+	"bytes"
 	"unsafe"
 
 	"goarrg.com/input"
 )
 
 type keyboard struct {
-	currentState [^input.DeviceAction(0)]bool
-	lastState    [^input.DeviceAction(0)]bool
+	currentState [^input.DeviceAction(0)]byte
+	lastState    [^input.DeviceAction(0)]byte
 }
 
 func (k *keyboard) Type() string {
 	return input.DeviceTypeKeyboard
 }
 
+func (k *keyboard) Scan(mask input.ScanMask) input.DeviceAction {
+	if !mask.HasBits(input.ScanValue) {
+		return 0
+	}
+	if i := bytes.IndexByte(k.currentState[:], 1); i > 0 {
+		return input.DeviceAction(i)
+	}
+	return 0
+}
+
 func (k *keyboard) StateFor(a input.DeviceAction) input.State {
-	if k.currentState[a] {
+	if k.currentState[a] == 1 {
 		return input.Value(1)
 	}
-
 	return input.Value(0)
 }
 
@@ -59,26 +69,23 @@ func (k *keyboard) StateDeltaFor(a input.DeviceAction) input.StateDelta {
 }
 
 func (k *keyboard) ActionStartedFor(a input.DeviceAction) bool {
-	return k.currentState[a] && !k.lastState[a]
+	return (k.currentState[a] == 1) && (k.lastState[a] == 0)
 }
 
 func (k *keyboard) ActionEndedFor(a input.DeviceAction) bool {
-	return k.lastState[a] && !k.currentState[a]
+	return (k.lastState[a] == 1) && (k.currentState[a] == 0)
 }
 
 func (k *keyboard) update(C.goEvent) {
 	k.lastState = k.currentState
 
 	if !Platform.display.hasKeyboardFocus() {
-		k.currentState = [^input.DeviceAction(0)]bool{}
+		k.currentState = [^input.DeviceAction(0)]byte{}
 		return
 	}
 
 	cNumKeys := C.int(0)
 	cKB := C.SDL_GetKeyboardState(&cNumKeys)
-	kb := unsafe.Slice((*uint8)(unsafe.Pointer(cKB)), int(cNumKeys))
-
-	for i := input.KeyA; i < input.KeyRightGUI; i++ {
-		k.currentState[i] = kb[i] == 1
-	}
+	kb := unsafe.Slice((*byte)(unsafe.Pointer(cKB)), int(cNumKeys))
+	copy(k.currentState[:], kb)
 }

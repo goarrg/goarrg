@@ -20,21 +20,32 @@ limitations under the License.
 package input
 
 import (
+	"bytes"
 	"math/rand"
 	"testing"
 )
 
 type dummyDevice struct {
-	currentState [^DeviceAction(0)]bool
-	lastState    [^DeviceAction(0)]bool
+	currentState [^DeviceAction(0)]byte
+	lastState    [^DeviceAction(0)]byte
 }
 
 func (d *dummyDevice) Type() string {
 	return "dummy"
 }
 
+func (d *dummyDevice) Scan(mask ScanMask) DeviceAction {
+	if !mask.HasBits(ScanValue) {
+		return 0
+	}
+	if i := bytes.IndexByte(d.currentState[:], 1); i > 0 {
+		return DeviceAction(i)
+	}
+	return 0
+}
+
 func (d *dummyDevice) StateFor(a DeviceAction) State {
-	if d.currentState[a] {
+	if d.currentState[a] == 1 {
 		return Value(1)
 	}
 
@@ -54,11 +65,11 @@ func (d *dummyDevice) StateDeltaFor(a DeviceAction) StateDelta {
 }
 
 func (d *dummyDevice) ActionStartedFor(a DeviceAction) bool {
-	return d.currentState[a] && !d.lastState[a]
+	return (d.currentState[a] == 1) && (d.lastState[a] == 0)
 }
 
 func (d *dummyDevice) ActionEndedFor(a DeviceAction) bool {
-	return d.lastState[a] && !d.currentState[a]
+	return (d.lastState[a] == 1) && (d.currentState[a] == 0)
 }
 
 var (
@@ -75,7 +86,7 @@ func TestScan(t *testing.T) {
 
 	i := rand.Intn(16)
 	a := DeviceAction(rand.Intn(int(^DeviceAction(0))))
-	devices[i].currentState[a] = true
+	devices[i].currentState[a] = 1
 
 	d, a2 := Scan(ScanValue)
 
