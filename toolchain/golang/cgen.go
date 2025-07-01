@@ -727,7 +727,7 @@ func GenerateCExportFile(preamble, outfile string, buildflags []string, packageP
 			for _, k := range keys {
 				f := funcMap[k]
 				// checkpoint, _ := headerOut.Seek(0, io.SeekCurrent)
-				fmt.Fprintf(goFileOut, "// export %s\n", k)
+				fmt.Fprintf(goFileOut, "//export %s\n", k)
 				fmt.Fprintf(goFileOut, "func %s(", k)
 				if len(f.Args) > 0 {
 					for _, arg := range f.Args {
