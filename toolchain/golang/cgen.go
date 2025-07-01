@@ -551,31 +551,6 @@ has to call at most 2 destructors, one to destroy the object itself if needed
 and Go_DestroyHandle to destroy the handle.
 */
 func GenerateCExportFile(preamble, outfile string, buildflags []string, packagePath ...string) {
-	headerOut, err := os.Create(outfile + ".go")
-	if err != nil {
-		panic(debug.ErrorWrapf(err, "Failed to create file: %s", err))
-	}
-	{
-		defer func() {
-			out, err := imports.Process(outfile+".go", nil, nil)
-			if err != nil {
-				panic(err)
-			}
-			os.WriteFile(outfile+".go", out, 0o655)
-		}()
-		defer headerOut.Close()
-		defer headerOut.Sync()
-	}
-
-	headerOut.WriteString(strings.TrimSpace(preamble) + "\n\n")
-	headerOut.WriteString("package main\n\n")
-	headerOut.WriteString("/*\n")
-	headerOut.WriteString("#include <stddef.h>\n")
-	headerOut.WriteString("#include <stdint.h>\n")
-	headerOut.WriteString("\n")
-	headerOut.WriteString("#define GO_HANDLE(object) typedef struct object##_t* object\n\n")
-	headerOut.WriteString("typedef uint32_t Go_Boolean32;\n\n")
-
 	typeMap := map[string]*exportedType{}
 	funcMap := map[string]*exportedFunc{}
 	importMap := map[string]struct{}{}
@@ -628,147 +603,178 @@ func GenerateCExportFile(preamble, outfile string, buildflags []string, packageP
 	}
 
 	{
+		headerOut, err := os.Create(outfile + ".h")
+		if err != nil {
+			panic(debug.ErrorWrapf(err, "Failed to create file: %s", err))
+		}
+
+		headerOut.WriteString("#pragma once\n\n")
+		headerOut.WriteString("#include <stddef.h>\n")
+		headerOut.WriteString("#include <stdint.h>\n")
+		headerOut.WriteString("\n")
+		headerOut.WriteString("#define GO_HANDLE(object) typedef struct object##_t* object\n\n")
+		headerOut.WriteString("typedef uint32_t Go_Boolean32;\n\n")
+
 		keys := maps.Keys(typeMap)
 		slices.Sort(keys)
-
 		for _, k := range keys {
 			writeExportedType(typeMap, headerOut, k)
 		}
-		headerOut.WriteString("*/\n")
-		headerOut.WriteString("import \"C\"\n")
 	}
-	{
-		headerOut.WriteString("import (\n")
-		headerOut.WriteString("\"unsafe\"\n")
-		headerOut.WriteString("\"runtime/cgo\"\n")
-		keys := maps.Keys(importMap)
-		slices.Sort(keys)
-		for _, k := range keys {
-			fmt.Fprintf(headerOut, "%q\n", k)
-		}
-		headerOut.WriteString(")\n\n")
-	}
-	{
-		keys := maps.Keys(typeMap)
-		slices.Sort(keys)
 
-		for _, k := range keys {
-			typeMap[k].Visited = false
+	{
+		goFileOut, err := os.Create(outfile + ".go")
+		if err != nil {
+			panic(debug.ErrorWrapf(err, "Failed to create file: %s", err))
 		}
-		for _, k := range keys {
-			writeExportedTypeConversion(typeMap, headerOut, k)
-		}
-		for _, k := range keys {
-			typeMap[k].Visited = false
-		}
-
+		defer func() {
+			out, err := imports.Process(outfile+".go", nil, nil)
+			if err != nil {
+				panic(err)
+			}
+			os.WriteFile(outfile+".go", out, 0o655)
+		}()
+		defer goFileOut.Close()
+		defer goFileOut.Sync()
 		{
-			fmt.Fprintf(headerOut, "func convert_from_Go_Boolean32(value C.Go_Boolean32) bool{\n")
-			fmt.Fprintf(headerOut, "\tif value > 0 {\n")
-			fmt.Fprintf(headerOut, "\t\treturn true\n")
-			fmt.Fprintf(headerOut, "\t} else {\n")
-			fmt.Fprintf(headerOut, "\t\treturn false\n")
-			fmt.Fprintf(headerOut, "\t}\n")
-			fmt.Fprintf(headerOut, "}\n")
+			goFileOut.WriteString(strings.TrimSpace(preamble) + "\n\n")
+			goFileOut.WriteString("package main\n\n")
+			goFileOut.WriteString("/*\n")
+			goFileOut.WriteString("#include \"" + outfile + ".h\"\n")
+			goFileOut.WriteString("*/\n")
+			goFileOut.WriteString("import \"C\"\n")
+			goFileOut.WriteString("import (\n")
+			goFileOut.WriteString("\"unsafe\"\n")
+			goFileOut.WriteString("\"runtime/cgo\"\n")
+			keys := maps.Keys(importMap)
+			slices.Sort(keys)
+			for _, k := range keys {
+				fmt.Fprintf(goFileOut, "%q\n", k)
+			}
+			goFileOut.WriteString(")\n\n")
+		}
+		{
+			keys := maps.Keys(typeMap)
+			slices.Sort(keys)
 
-			fmt.Fprintf(headerOut, "func convert_to_Go_Boolean32(value bool) C.Go_Boolean32 {\n")
-			fmt.Fprintf(headerOut, "\tif value {\n")
-			fmt.Fprintf(headerOut, "\t\treturn 1\n")
-			fmt.Fprintf(headerOut, "\t} else {\n")
-			fmt.Fprintf(headerOut, "\t\treturn 0\n")
-			fmt.Fprintf(headerOut, "\t}\n")
-			fmt.Fprintf(headerOut, "}\n")
-		}
-	}
-	{
-		fmt.Fprintf(headerOut, "// export Go_DestroyHandle\n")
-		fmt.Fprintf(headerOut, "func Go_DestroyHandle(handle unsafe.Pointer) {\n")
-		fmt.Fprintf(headerOut, "\tcgo.Handle(uintptr(handle)).Delete()\n")
-		fmt.Fprintf(headerOut, "}\n")
-	}
-	{
-		keys := maps.Keys(funcMap)
-		slices.Sort(keys)
-		convertArgs := func(f *exportedFunc) string {
-			args := ""
-			for _, arg := range f.Args {
-				args += "go" + arg.Name + ","
-				t := typeMap[arg.CType]
-				if t == nil {
-					switch arg.GoType {
-					case "string":
-						fmt.Fprintf(headerOut, "\tgo%[1]s := C.GoString(c%[1]s)\n", arg.Name)
-					case "bool":
-						fmt.Fprintf(headerOut, "\tgo%[1]s := convert_from_Go_Boolean32(c%[1]s)\n", arg.Name)
-					default:
-						fmt.Fprintf(headerOut, "\tgo%[1]s := %[2]s(c%[1]s)\n", arg.Name, arg.GoType)
-					}
-					continue
-				}
-				fmt.Fprintf(headerOut, "\tgo%[1]s := convert_from_%[2]s(c%[1]s)\n", arg.Name, arg.CType)
+			for _, k := range keys {
+				typeMap[k].Visited = false
 			}
-			if f.IsVariadic {
-				return strings.TrimSuffix(strings.TrimPrefix(args, "gorecv,"), ",") + "..."
-			} else {
-				return strings.TrimSuffix(strings.TrimPrefix(args, "gorecv,"), ",")
+			for _, k := range keys {
+				writeExportedTypeConversion(typeMap, goFileOut, k)
+			}
+			for _, k := range keys {
+				typeMap[k].Visited = false
+			}
+
+			{
+				fmt.Fprintf(goFileOut, "func convert_from_Go_Boolean32(value C.Go_Boolean32) bool{\n")
+				fmt.Fprintf(goFileOut, "\tif value > 0 {\n")
+				fmt.Fprintf(goFileOut, "\t\treturn true\n")
+				fmt.Fprintf(goFileOut, "\t} else {\n")
+				fmt.Fprintf(goFileOut, "\t\treturn false\n")
+				fmt.Fprintf(goFileOut, "\t}\n")
+				fmt.Fprintf(goFileOut, "}\n")
+
+				fmt.Fprintf(goFileOut, "func convert_to_Go_Boolean32(value bool) C.Go_Boolean32 {\n")
+				fmt.Fprintf(goFileOut, "\tif value {\n")
+				fmt.Fprintf(goFileOut, "\t\treturn 1\n")
+				fmt.Fprintf(goFileOut, "\t} else {\n")
+				fmt.Fprintf(goFileOut, "\t\treturn 0\n")
+				fmt.Fprintf(goFileOut, "\t}\n")
+				fmt.Fprintf(goFileOut, "}\n")
 			}
 		}
-		for _, k := range keys {
-			f := funcMap[k]
-			if f.Return.CType != "" {
-				writeOutputTypeConversion(typeMap, headerOut, f.Return.CType)
-			}
+		{
+			fmt.Fprintf(goFileOut, "// export Go_DestroyHandle\n")
+			fmt.Fprintf(goFileOut, "func Go_DestroyHandle(handle unsafe.Pointer) {\n")
+			fmt.Fprintf(goFileOut, "\tcgo.Handle(uintptr(handle)).Delete()\n")
+			fmt.Fprintf(goFileOut, "}\n")
 		}
-		for _, k := range keys {
-			f := funcMap[k]
-			// checkpoint, _ := headerOut.Seek(0, io.SeekCurrent)
-			fmt.Fprintf(headerOut, "// export %s\n", k)
-			fmt.Fprintf(headerOut, "func %s(", k)
-			if len(f.Args) > 0 {
+		{
+			keys := maps.Keys(funcMap)
+			slices.Sort(keys)
+			convertArgs := func(f *exportedFunc) string {
+				args := ""
 				for _, arg := range f.Args {
-					if strings.HasSuffix(arg.CType, "*") {
-						fmt.Fprintf(headerOut, "c%s *C.%s,", arg.Name, strings.TrimSuffix(arg.CType, "*"))
-					} else {
-						fmt.Fprintf(headerOut, "c%s C.%s,", arg.Name, arg.CType)
+					args += "go" + arg.Name + ","
+					t := typeMap[arg.CType]
+					if t == nil {
+						switch arg.GoType {
+						case "string":
+							fmt.Fprintf(goFileOut, "\tgo%[1]s := C.GoString(c%[1]s)\n", arg.Name)
+						case "bool":
+							fmt.Fprintf(goFileOut, "\tgo%[1]s := convert_from_Go_Boolean32(c%[1]s)\n", arg.Name)
+						default:
+							fmt.Fprintf(goFileOut, "\tgo%[1]s := %[2]s(c%[1]s)\n", arg.Name, arg.GoType)
+						}
+						continue
 					}
+					fmt.Fprintf(goFileOut, "\tgo%[1]s := convert_from_%[2]s(c%[1]s)\n", arg.Name, arg.CType)
 				}
-				headerOut.Seek(-1, io.SeekCurrent)
-			}
-			fmt.Fprintf(headerOut, ") ")
-			if f.Return.CType != "" {
-				fmt.Fprintf(headerOut, "C.%s {\n", f.Return.CType)
-				if f.Recv != "" {
-					fmt.Fprintf(headerOut, "\tret := gorecv.%s(%s)\n", f.TargetName, convertArgs(f))
+				if f.IsVariadic {
+					return strings.TrimSuffix(strings.TrimPrefix(args, "gorecv,"), ",") + "..."
 				} else {
-					fmt.Fprintf(headerOut, "\tret := %s(%s)\n", f.TargetName, convertArgs(f))
-				}
-				if typeMap[f.Return.CType] != nil {
-					if typeMap[f.Return.CType].IsHandle {
-						fmt.Fprintf(headerOut, "\treturn (C.%s)(unsafe.Pointer(cgo.NewHandle(ret)))\n", f.Return.CType)
-					} else {
-						fmt.Fprintf(headerOut, "\treturn convert_to_%s(ret)\n", f.Return.CType)
-					}
-				} else if f.Return.GoType == "bool" {
-					fmt.Fprintf(headerOut, "\treturn convert_to_Go_Boolean32(ret)\n")
-				} else {
-					fmt.Fprintf(headerOut, "\treturn (C.%s)(ret)\n", f.Return.CType)
-				}
-			} else {
-				fmt.Fprintf(headerOut, "{\n")
-				if f.Recv != "" {
-					fmt.Fprintf(headerOut, "\tgorecv.%s(%s)\n", f.TargetName, convertArgs(f))
-				} else {
-					fmt.Fprintf(headerOut, "\t%s(%s)\n", f.TargetName, convertArgs(f))
+					return strings.TrimSuffix(strings.TrimPrefix(args, "gorecv,"), ",")
 				}
 			}
-			fmt.Fprintf(headerOut, "}\n")
+			for _, k := range keys {
+				f := funcMap[k]
+				if f.Return.CType != "" {
+					writeOutputTypeConversion(typeMap, goFileOut, f.Return.CType)
+				}
+			}
+			for _, k := range keys {
+				f := funcMap[k]
+				// checkpoint, _ := headerOut.Seek(0, io.SeekCurrent)
+				fmt.Fprintf(goFileOut, "// export %s\n", k)
+				fmt.Fprintf(goFileOut, "func %s(", k)
+				if len(f.Args) > 0 {
+					for _, arg := range f.Args {
+						if strings.HasSuffix(arg.CType, "*") {
+							fmt.Fprintf(goFileOut, "c%s *C.%s,", arg.Name, strings.TrimSuffix(arg.CType, "*"))
+						} else {
+							fmt.Fprintf(goFileOut, "c%s C.%s,", arg.Name, arg.CType)
+						}
+					}
+					goFileOut.Seek(-1, io.SeekCurrent)
+				}
+				fmt.Fprintf(goFileOut, ") ")
+				if f.Return.CType != "" {
+					fmt.Fprintf(goFileOut, "C.%s {\n", f.Return.CType)
+					if f.Recv != "" {
+						fmt.Fprintf(goFileOut, "\tret := gorecv.%s(%s)\n", f.TargetName, convertArgs(f))
+					} else {
+						fmt.Fprintf(goFileOut, "\tret := %s(%s)\n", f.TargetName, convertArgs(f))
+					}
+					if typeMap[f.Return.CType] != nil {
+						if typeMap[f.Return.CType].IsHandle {
+							fmt.Fprintf(goFileOut, "\treturn (C.%s)(unsafe.Pointer(cgo.NewHandle(ret)))\n", f.Return.CType)
+						} else {
+							fmt.Fprintf(goFileOut, "\treturn convert_to_%s(ret)\n", f.Return.CType)
+						}
+					} else if f.Return.GoType == "bool" {
+						fmt.Fprintf(goFileOut, "\treturn convert_to_Go_Boolean32(ret)\n")
+					} else {
+						fmt.Fprintf(goFileOut, "\treturn (C.%s)(ret)\n", f.Return.CType)
+					}
+				} else {
+					fmt.Fprintf(goFileOut, "{\n")
+					if f.Recv != "" {
+						fmt.Fprintf(goFileOut, "\tgorecv.%s(%s)\n", f.TargetName, convertArgs(f))
+					} else {
+						fmt.Fprintf(goFileOut, "\t%s(%s)\n", f.TargetName, convertArgs(f))
+					}
+				}
+				fmt.Fprintf(goFileOut, "}\n")
 
-			/*
-				if !complete {
-					headerOut.Seek(checkpoint, io.SeekStart)
-					headerOut.Truncate(checkpoint)
-				}
-			*/
+				/*
+					if !complete {
+						headerOut.Seek(checkpoint, io.SeekStart)
+						headerOut.Truncate(checkpoint)
+					}
+				*/
+			}
 		}
 	}
 }
