@@ -550,7 +550,7 @@ A quirk of the handle system is that types defined by GO_HANDLE(...)
 has to call at most 2 destructors, one to destroy the object itself if needed
 and Go_DestroyHandle to destroy the handle.
 */
-func GenerateCExportFile(preamble, outfile string, packagePath ...string) {
+func GenerateCExportFile(preamble, outfile string, buildflags []string, packagePath ...string) {
 	headerOut, err := os.Create(outfile + ".go")
 	if err != nil {
 		panic(debug.ErrorWrapf(err, "Failed to create file: %s", err))
@@ -582,7 +582,7 @@ func GenerateCExportFile(preamble, outfile string, packagePath ...string) {
 
 	for _, pattern := range packagePath {
 		list, err := packages.Load(&packages.Config{
-			Mode: packages.NeedName | packages.NeedTypes, Dir: toolchain.WorkingModuleDir(),
+			Mode: packages.NeedName | packages.NeedTypes, BuildFlags: buildflags, Dir: toolchain.WorkingModuleDir(),
 		}, pattern)
 		if err != nil {
 			panic(debug.ErrorWrapf(err, "Failed to load package pattern: %s", packagePath))
