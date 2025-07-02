@@ -51,10 +51,11 @@ type exportedType struct {
 }
 
 type exportedFuncArg struct {
-	Name   string
-	CType  string
-	GoType string
-	GoElem string
+	Name    string
+	CType   string
+	GoType  string
+	GoElem  string
+	Pointer bool
 }
 
 type exportedFunc struct {
@@ -115,17 +116,24 @@ func goNameToC(pkg, name string) string {
 	return "Go_" + pkg + "_" + name
 }
 
-func exportGoFunc(mF map[string]*exportedFunc, mT map[string]*exportedType, mI map[string]struct{}, o *types.Func) {
+func exportGoFunc(mF map[string]*exportedFunc, mT map[string]*exportedType, mI map[string]struct{}, recv types.Type, o *types.Func) {
 	dName := goNameToC(o.Pkg().Name(), o.Name())
-	if mF[dName] != nil {
-		return
-	}
 	sig := o.Type().(*types.Signature)
 	ex := exportedFunc{
 		TargetName: o.Pkg().Name() + "." + o.Name(),
 		IsVariadic: sig.Variadic(),
 	}
-	if sig.Recv() != nil {
+	if recv != nil {
+		name, _ := exportGoTypeName(mI, recv)
+		ex.Recv = goTypeName(recv)
+		ex.TargetName = o.Name()
+		dName = name + "_" + o.Name()
+		ex.Args = append(ex.Args, exportedFuncArg{
+			Name:   "recv",
+			CType:  name,
+			GoType: ex.Recv,
+		})
+	} else if sig.Recv() != nil {
 		name, _ := exportGoTypeName(mI, sig.Recv().Type())
 		ex.Recv = goTypeName(sig.Recv().Type())
 		ex.TargetName = o.Name()
@@ -136,6 +144,9 @@ func exportGoFunc(mF map[string]*exportedFunc, mT map[string]*exportedType, mI m
 			GoType: ex.Recv,
 		})
 	}
+	if mF[dName] != nil {
+		return
+	}
 	p := sig.Params()
 	complete := true
 	for i := range p.Len() {
@@ -144,8 +155,20 @@ func exportGoFunc(mF map[string]*exportedFunc, mT map[string]*exportedType, mI m
 			complete = false
 			break
 		}
+		arg := exportedFuncArg{
+			Name:   p.At(i).Name(),
+			CType:  pName,
+			GoType: goTypeName(p.At(i).Type()),
+		}
 		if !isBasic {
-			exportGoType(mT, mI, pName, p.At(i).Type())
+			if mT[pName] == nil {
+				exportGoType(mF, mT, mI, pName, p.At(i).Type())
+				if mT[pName] == nil {
+					complete = false
+					break
+				}
+			}
+
 			{
 				_, isPointer := p.At(i).Type().Underlying().(*types.Pointer)
 				_, isInterface := p.At(i).Type().Underlying().(*types.Interface)
@@ -153,13 +176,12 @@ func exportGoFunc(mF map[string]*exportedFunc, mT map[string]*exportedType, mI m
 					complete = false
 					break
 				}
+				if isPointer && !mT[pName].IsHandle {
+					arg.Pointer = true
+				}
 			}
 		}
-		ex.Args = append(ex.Args, exportedFuncArg{
-			Name:   p.At(i).Name(),
-			CType:  pName,
-			GoType: goTypeName(p.At(i).Type()),
-		})
+		ex.Args = append(ex.Args, arg)
 	}
 	if !complete {
 		debug.WPrintf("UNHANDLED: unhandled args: %s", ex.TargetName)
@@ -180,8 +202,18 @@ func exportGoFunc(mF map[string]*exportedFunc, mT map[string]*exportedType, mI m
 			debug.WPrintf("UNHANDLED: slice return type: %s", ex.TargetName)
 			return
 		}
+		if _, isArray := ret.(*types.Array); isArray {
+			debug.WPrintf("UNHANDLED: array return type: %s", ex.TargetName)
+			return
+		}
 		if !isBasic {
-			exportGoType(mT, mI, pName, sig.Results().At(0).Type())
+			if mT[pName] == nil {
+				exportGoType(mF, mT, mI, pName, sig.Results().At(0).Type())
+				if mT[pName] == nil {
+					debug.WPrintf("UNHANDLED: return type: %s", ex.TargetName)
+					return
+				}
+			}
 			for _, f := range mT[pName].Fields {
 				if strings.HasSuffix(f.CType, "_Slice") {
 					debug.WPrintf("UNHANDLED: slice return type: %s", ex.TargetName)
@@ -189,7 +221,7 @@ func exportGoFunc(mF map[string]*exportedFunc, mT map[string]*exportedType, mI m
 				}
 			}
 		} else if pName == "char*" {
-			debug.WPrintf("UNHANDLED: string return type: %s", ex.TargetName)
+			// debug.WPrintf("UNHANDLED: string return type: %s", ex.TargetName)
 			return
 		}
 		ex.Return = exportedFuncArg{
@@ -198,9 +230,19 @@ func exportGoFunc(mF map[string]*exportedFunc, mT map[string]*exportedType, mI m
 		}
 	}
 	mF[dName] = &ex
+	if sig.Results().Len() > 0 {
+		recv := sig.Results().At(0).Type()
+		set := types.NewMethodSet(sig.Results().At(0).Type())
+		for i := range set.Len() {
+			m := set.At(i)
+			if m.Obj().Exported() {
+				exportGoFunc(mF, mT, mI, recv, m.Obj().(*types.Func))
+			}
+		}
+	}
 }
 
-func exportGoStruct(mT map[string]*exportedType, mI map[string]struct{}, name string, o types.Type) {
+func exportGoStruct(mF map[string]*exportedFunc, mT map[string]*exportedType, mI map[string]struct{}, name string, o types.Type) {
 	if mT[name] != nil {
 		return
 	}
@@ -235,7 +277,7 @@ func exportGoStruct(mT map[string]*exportedType, mI map[string]struct{}, name st
 			if arr, ok := f.Type().(*types.Array); ok {
 				if !isBasic {
 					ex.Depends = append(ex.Depends, dName)
-					exportGoType(mT, mI, dName, arr.Elem())
+					exportGoType(mF, mT, mI, dName, arr.Elem())
 				}
 				ex.Def += fmt.Sprintf("\t%s %s[%d];\n", dName, f.Name(), arr.Len())
 				ex.Fields = append(ex.Fields, exportedStructField{
@@ -247,7 +289,7 @@ func exportGoStruct(mT map[string]*exportedType, mI map[string]struct{}, name st
 			} else {
 				ex.Depends = append(ex.Depends, dName)
 				if !isBasic {
-					exportGoType(mT, mI, dName, f.Type())
+					exportGoType(mF, mT, mI, dName, f.Type())
 				}
 				ex.Def += fmt.Sprintf("\t%s %s;\n", dName, f.Name())
 				ex.Fields = append(ex.Fields, exportedStructField{
@@ -268,34 +310,40 @@ func exportGoStruct(mT map[string]*exportedType, mI map[string]struct{}, name st
 	mT[name] = &ex
 }
 
-func exportGoType(m map[string]*exportedType, mI map[string]struct{}, name string, o types.Type) {
-	if m[name] != nil {
+func exportGoType(mF map[string]*exportedFunc, mT map[string]*exportedType, mI map[string]struct{}, name string, o types.Type) {
+	gType := goTypeName(o)
+	if gType == "" {
+		panic(name)
+	}
+	if mT[name] != nil {
 		return
 	}
-	gType := goTypeName(o)
 	switch underlying := o.Underlying().(type) {
 	case *types.Basic:
-		m[name] = &exportedType{
+		mT[name] = &exportedType{
 			Def:    "typedef " + basicTypeToCType(underlying.Kind()),
 			GoType: gType,
 		}
 	case *types.Struct:
-		exportGoStruct(m, mI, name, o)
+		exportGoStruct(mF, mT, mI, name, o)
 	case *types.Interface:
-		m[name] = &exportedType{
+		mT[name] = &exportedType{
 			Def:      "GO_HANDLE(" + name + ");",
 			GoType:   gType,
 			IsHandle: true,
 		}
 	case *types.Pointer:
-		m[name] = &exportedType{
+		mT[name] = &exportedType{
 			Def:      "GO_HANDLE(" + name + ");",
 			GoType:   gType,
 			IsHandle: true,
 		}
 	case *types.Slice:
 		tName, isBasic := exportGoTypeName(mI, underlying.Elem())
-		m[name] = &exportedType{
+		if tName == "" {
+			panic("WTF")
+		}
+		mT[name] = &exportedType{
 			Def: "typedef struct {\n" +
 				"\t" + tName + "* ptr;\n" +
 				"\tsize_t len;\n" +
@@ -303,12 +351,15 @@ func exportGoType(m map[string]*exportedType, mI map[string]struct{}, name strin
 			GoType: gType,
 		}
 		if !isBasic {
-			exportGoType(m, mI, tName, underlying.Elem())
-			m[name].Depends = append(m[name].Depends, tName)
+			exportGoType(mF, mT, mI, tName, underlying.Elem())
+			mT[name].Depends = append(mT[name].Depends, tName)
 		}
 	case *types.Array:
 		tName, isBasic := exportGoTypeName(mI, underlying.Elem())
-		m[name] = &exportedType{
+		if tName == "" {
+			return
+		}
+		mT[name] = &exportedType{
 			Def:             fmt.Sprintf("typedef %s %s[%d];", tName, name, underlying.Len()),
 			GoType:          gType,
 			ArraySize:       underlying.Len(),
@@ -316,8 +367,8 @@ func exportGoType(m map[string]*exportedType, mI map[string]struct{}, name strin
 			ArrayElemGoType: goTypeName(underlying.Elem()),
 		}
 		if !isBasic {
-			exportGoType(m, mI, tName, underlying.Elem())
-			m[name].Depends = append(m[name].Depends, tName)
+			exportGoType(mF, mT, mI, tName, underlying.Elem())
+			mT[name].Depends = append(mT[name].Depends, tName)
 		}
 	case *types.Map:
 		/*
@@ -334,17 +385,44 @@ func exportGoType(m map[string]*exportedType, mI map[string]struct{}, name strin
 	default:
 		panic(fmt.Sprintf("UNHANDLED: %s %T %T\n", name, o, underlying))
 	}
+	{
+		set := types.NewMethodSet(o)
+		for i := range set.Len() {
+			m := set.At(i)
+			if m.Obj().Exported() {
+				exportGoFunc(mF, mT, mI, o, m.Obj().(*types.Func))
+			}
+		}
+	}
 }
 
 func goTypeName(t types.Type) string {
 	switch kind := t.(type) {
 	case *types.Alias:
-		return kind.Obj().Pkg().Name() + "." + kind.Obj().Name()
+		name := kind.Obj().Pkg().Name() + "." + kind.Obj().Name()
+		if kind.TypeArgs() != nil {
+			name += "["
+			for i := range kind.TypeArgs().Len() {
+				name += kind.TypeArgs().At(i).String() + ","
+			}
+			name = strings.TrimSuffix(name, ",")
+			name += "]"
+		}
+		return name
 	case *types.Named:
 		if kind.Origin().Obj().Pkg() == nil {
 			return ""
 		}
-		return kind.Obj().Pkg().Name() + "." + kind.Obj().Name()
+		name := kind.Obj().Pkg().Name() + "." + kind.Obj().Name()
+		if kind.TypeArgs() != nil {
+			name += "["
+			for i := range kind.TypeArgs().Len() {
+				name += kind.TypeArgs().At(i).String() + ","
+			}
+			name = strings.TrimSuffix(name, ",")
+			name += "]"
+		}
+		return name
 	case *types.Basic:
 		return kind.Name()
 	case *types.Pointer:
@@ -352,10 +430,15 @@ func goTypeName(t types.Type) string {
 		return "*" + name
 	case *types.Slice:
 		name := goTypeName(kind.Elem())
+		if name == "" {
+			return ""
+		}
 		return "[]" + name
 	case *types.Array:
 		name := goTypeName(kind.Elem())
 		return fmt.Sprintf("[%d]%s", kind.Len(), name)
+	case *types.TypeParam:
+		return ""
 	default:
 		panic(fmt.Sprintf("UNHANDLED: %T\n", t))
 	}
@@ -369,14 +452,26 @@ func exportGoTypeName(mI map[string]struct{}, t types.Type) (string, bool) {
 		}
 		mI[kind.Origin().Obj().Pkg().Path()] = struct{}{}
 		_, isBasic := kind.Underlying().(*types.Basic)
-		return goNameToC(kind.Obj().Pkg().Name(), kind.Obj().Name()), isBasic
+		name := goNameToC(kind.Obj().Pkg().Name(), kind.Obj().Name())
+		if kind.TypeArgs() != nil {
+			for i := range kind.TypeArgs().Len() {
+				name += kind.TypeArgs().At(i).String()
+			}
+		}
+		return name, isBasic
 	case *types.Named:
 		if kind.Origin().Obj().Pkg() == nil {
 			return "", false
 		}
 		mI[kind.Origin().Obj().Pkg().Path()] = struct{}{}
 		_, isBasic := kind.Underlying().(*types.Basic)
-		return goNameToC(kind.Obj().Pkg().Name(), kind.Obj().Name()), isBasic
+		name := goNameToC(kind.Obj().Pkg().Name(), kind.Obj().Name())
+		if kind.TypeArgs() != nil {
+			for i := range kind.TypeArgs().Len() {
+				name += kind.TypeArgs().At(i).String()
+			}
+		}
+		return name, isBasic
 	case *types.Basic:
 		if kind.Kind() == types.Bool {
 			return "Go_Boolean32", true
@@ -391,6 +486,9 @@ func exportGoTypeName(mI map[string]struct{}, t types.Type) (string, bool) {
 		return name, false
 	case *types.Slice:
 		name, isBasic := exportGoTypeName(mI, kind.Elem())
+		if name == "" {
+			return "", false
+		}
 		if name == "char*" {
 			name = "String"
 		}
@@ -406,6 +504,10 @@ func exportGoTypeName(mI map[string]struct{}, t types.Type) (string, bool) {
 		return "", false
 	case *types.Array:
 		return exportGoTypeName(mI, kind.Elem())
+	case *types.TypeParam:
+		return "", false
+	case *types.Interface:
+		return "", false
 	default:
 		panic(fmt.Sprintf("UNHANDLED: %T %s\n", t, t))
 	}
@@ -543,12 +645,53 @@ func writeOutputTypeConversion(m map[string]*exportedType, out io.Writer, ctype 
 	}
 }
 
+func parseScope(s *types.Scope, mF map[string]*exportedFunc, mT map[string]*exportedType, mI map[string]struct{}) {
+	for i := range s.NumChildren() {
+		parseScope(s.Child(i), mF, mT, mI)
+	}
+	for _, n := range s.Names() {
+		o := s.Lookup(n)
+		if o.Exported() {
+			switch kind := o.(type) {
+			case *types.TypeName:
+				dName, _ := exportGoTypeName(mI, o.Type())
+				if dName == "" {
+					continue
+				}
+				exportGoType(mF, mT, mI, dName, o.Type())
+			case *types.Const:
+				dName, _ := exportGoTypeName(mI, o.Type())
+				if mT[dName] != nil {
+					if !strings.HasPrefix(mT[dName].Def, "typedef enum") {
+						mT[dName].Def = "typedef enum {\n"
+					}
+					mT[dName].Def += fmt.Sprintf("\t%s = %s,\n", goNameToC(o.Pkg().Name(), o.Name()), kind.Val().ExactString())
+				}
+				// fmt.Printf("%s %s %v %s\n", n, kind.Type().(*types.Named).Obj().Name(), kind.Val(), o.Type().Underlying().(*types.Basic).Name())
+			case *types.Func:
+				exportGoFunc(mF, mT, mI, nil, kind)
+			default:
+				panic(fmt.Sprintf("UNHANDLED: %s %T %T\n", o.Name(), o, o.Type().Underlying()))
+			}
+
+			{
+				set := types.NewMethodSet(o.Type())
+				for i := range set.Len() {
+					m := set.At(i)
+					if m.Obj().Exported() {
+						exportGoFunc(mF, mT, mI, o.Type(), m.Obj().(*types.Func))
+					}
+				}
+			}
+		}
+	}
+}
+
 /*
 GenerateCExportFile will parse the packages given and generate C bindings,
 it has multiple limitations and doesn't support all types so use with caution.
 A quirk of the handle system is that types defined by GO_HANDLE(...)
-has to call at most 2 destructors, one to destroy the object itself if needed
-and Go_DestroyHandle to destroy the handle.
+has to be destroyed with Go_DestroyHandle unless there is a type specific Destroy function.
 */
 func GenerateCExportFile(preamble, outfile string, buildflags []string, packagePath ...string) {
 	typeMap := map[string]*exportedType{}
@@ -557,7 +700,7 @@ func GenerateCExportFile(preamble, outfile string, buildflags []string, packageP
 
 	for _, pattern := range packagePath {
 		list, err := packages.Load(&packages.Config{
-			Mode: packages.NeedName | packages.NeedTypes, BuildFlags: buildflags, Dir: toolchain.WorkingModuleDir(),
+			Mode: packages.NeedName | packages.LoadAllSyntax, BuildFlags: buildflags, Dir: toolchain.WorkingModuleDir(),
 		}, pattern)
 		if err != nil {
 			panic(debug.ErrorWrapf(err, "Failed to load package pattern: %s", packagePath))
@@ -565,40 +708,12 @@ func GenerateCExportFile(preamble, outfile string, buildflags []string, packageP
 		if len(list) == 0 {
 			panic(debug.Errorf("No go package returned for: %s", packagePath))
 		}
-
 		for _, pkg := range list {
-			t := pkg.Types.Scope()
-			for _, n := range t.Names() {
-				o := t.Lookup(n)
-				if o.Exported() {
-					switch kind := o.(type) {
-					case *types.TypeName:
-						dName, _ := exportGoTypeName(importMap, o.Type())
-						exportGoType(typeMap, importMap, dName, o.Type())
-
-						set := types.NewMethodSet(o.Type())
-						for i := range set.Len() {
-							m := set.At(i)
-							if m.Obj().Exported() {
-								exportGoFunc(funcMap, typeMap, importMap, m.Obj().(*types.Func))
-							}
-						}
-					case *types.Const:
-						dName, _ := exportGoTypeName(importMap, o.Type())
-						if typeMap[dName] != nil {
-							if !strings.HasPrefix(typeMap[dName].Def, "typedef enum") {
-								typeMap[dName].Def = "typedef enum {\n"
-							}
-							typeMap[dName].Def += fmt.Sprintf("\t%s = %s,\n", goNameToC(o.Pkg().Name(), n), kind.Val().ExactString())
-						}
-						// fmt.Printf("%s %s %v %s\n", n, kind.Type().(*types.Named).Obj().Name(), kind.Val(), o.Type().Underlying().(*types.Basic).Name())
-					case *types.Func:
-						exportGoFunc(funcMap, typeMap, importMap, kind)
-					default:
-						panic(fmt.Sprintf("UNHANDLED: %s %T %T\n", n, o, o.Type().Underlying()))
-					}
-				}
+			for _, e := range pkg.Errors {
+				panic(e)
 			}
+
+			parseScope(pkg.Types.Scope(), funcMap, typeMap, importMap)
 		}
 	}
 
@@ -628,14 +743,14 @@ func GenerateCExportFile(preamble, outfile string, buildflags []string, packageP
 			panic(debug.ErrorWrapf(err, "Failed to create file: %s", err))
 		}
 		defer func() {
+			goFileOut.Sync()
+			goFileOut.Close()
 			out, err := imports.Process(outfile+".go", nil, nil)
 			if err != nil {
 				panic(err)
 			}
 			os.WriteFile(outfile+".go", out, 0o655)
 		}()
-		defer goFileOut.Close()
-		defer goFileOut.Sync()
 		{
 			goFileOut.WriteString(strings.TrimSpace(preamble) + "\n\n")
 			goFileOut.WriteString("package main\n\n")
@@ -697,7 +812,11 @@ func GenerateCExportFile(preamble, outfile string, buildflags []string, packageP
 			convertArgs := func(f *exportedFunc) string {
 				args := ""
 				for _, arg := range f.Args {
-					args += "go" + arg.Name + ","
+					if arg.Pointer {
+						args += "&go" + arg.Name + ","
+					} else {
+						args += "go" + arg.Name + ","
+					}
 					t := typeMap[arg.CType]
 					if t == nil {
 						switch arg.GoType {
@@ -743,6 +862,9 @@ func GenerateCExportFile(preamble, outfile string, buildflags []string, packageP
 				if f.Return.CType != "" {
 					fmt.Fprintf(goFileOut, "C.%s {\n", f.Return.CType)
 					if f.Recv != "" {
+						if f.TargetName == "Destroy" && typeMap[f.Args[0].CType].IsHandle {
+							fmt.Fprintf(goFileOut, "\tdefer cgo.Handle(uintptr(unsafe.Pointer(crecv))).Delete()\n")
+						}
 						fmt.Fprintf(goFileOut, "\tret := gorecv.%s(%s)\n", f.TargetName, convertArgs(f))
 					} else {
 						fmt.Fprintf(goFileOut, "\tret := %s(%s)\n", f.TargetName, convertArgs(f))
@@ -761,6 +883,9 @@ func GenerateCExportFile(preamble, outfile string, buildflags []string, packageP
 				} else {
 					fmt.Fprintf(goFileOut, "{\n")
 					if f.Recv != "" {
+						if f.TargetName == "Destroy" && typeMap[f.Args[0].CType].IsHandle {
+							fmt.Fprintf(goFileOut, "\tdefer cgo.Handle(uintptr(unsafe.Pointer(crecv))).Delete()\n")
+						}
 						fmt.Fprintf(goFileOut, "\tgorecv.%s(%s)\n", f.TargetName, convertArgs(f))
 					} else {
 						fmt.Fprintf(goFileOut, "\t%s(%s)\n", f.TargetName, convertArgs(f))
