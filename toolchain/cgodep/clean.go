@@ -60,7 +60,7 @@ CleanCache clears out the download cache but not built dependencies.
 */
 func CleanCache() {
 	debug.IPrintf("Cleaning cgodep cache folder")
-	cleanDir(cacheDir())
+	cleanDir(CacheDir())
 }
 
 /*

@@ -87,6 +87,14 @@ func DataDir() string {
 }
 
 /*
+CacheDir returns the path where you can put data needed to build a dependency.
+e.g. source files.
+*/
+func CacheDir() string {
+	return filepath.Join(DataDir(), "cache")
+}
+
+/*
 InstallDir returns the path where the data for "name" should be stored. It is
 specific to target and build. So there is no concern of one target/build overriding another.
 As a special case, if target is the zero value, it is only given a path specific to name.

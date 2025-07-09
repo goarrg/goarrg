@@ -27,17 +27,13 @@ import (
 	"goarrg.com/debug"
 )
 
-func cacheDir() string {
-	return filepath.Join(DataDir(), "cache")
-}
-
 /*
 Get downloads the file located at url and places it within filepath.Join(DataDir(), cache)
 and names it fileName, verify will be used to verify the contents. If filename is
 found within the cache, verify is used to verify the contents and only redownloading if errored.
 */
 func Get(url string, fileName string, verify func(io.ReadSeeker) error) (io.ReadSeekCloser, error) {
-	cacheDir := cacheDir()
+	cacheDir := CacheDir()
 	fileName = filepath.Join(cacheDir, fileName)
 
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
