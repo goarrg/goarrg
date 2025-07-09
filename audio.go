@@ -25,9 +25,6 @@ Refer to driver's documentation on the valid value ranges
 */
 type AudioConfig struct {
 	Spec audio.Spec
-
-	// Length of the buffer in terms of samples, this is usually a power of 2
-	BufferLength int
 }
 
 type Audio interface {
