@@ -20,6 +20,7 @@ limitations under the License.
 #pragma once
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #define NO_SDL_VULKAN_TYPEDEFS
 #define VK_MAKE_API_VERSION(variant, major, minor, patch)          \
@@ -32,9 +33,19 @@ limitations under the License.
 
 VK_DEFINE_HANDLE(VkInstance)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkSurfaceKHR)
+VK_DEFINE_HANDLE(VkPhysicalDevice)
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_vulkan.h>
+typedef struct VkAllocationCallbacks {
+	void* pUserData;
+	void* pfnAllocation;
+	void* pfnReallocation;
+	void* pfnFree;
+	void* pfnInternalAllocation;
+	void* pfnInternalFree;
+} VkAllocationCallbacks;
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 
 typedef enum VkResult {
 	VK_SUCCESS = 0,

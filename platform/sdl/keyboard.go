@@ -17,8 +17,8 @@ limitations under the License.
 package sdl
 
 /*
-	#cgo pkg-config: sdl2
-	#include <SDL2/SDL.h>
+	#cgo pkg-config: sdl3
+	#include <SDL3/SDL.h>
 	#include "event.h"
 */
 import "C"

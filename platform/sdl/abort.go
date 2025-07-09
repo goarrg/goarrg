@@ -17,8 +17,8 @@ limitations under the License.
 package sdl
 
 /*
-	#cgo pkg-config: sdl2
-	#include <SDL2/SDL.h>
+	#cgo pkg-config: sdl3
+	#include <SDL3/SDL.h>
 
 	int Popup(_GoString_ err) {
 		return SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", _GoStringPtr(err), NULL);

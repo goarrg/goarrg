@@ -20,7 +20,7 @@ limitations under the License.
 package sdl
 
 /*
-	#cgo pkg-config: sdl2
+	#cgo pkg-config: sdl3
 
 	#include "vk.h"
 */
@@ -28,6 +28,7 @@ import "C"
 
 import (
 	"fmt"
+	"runtime"
 	"unsafe"
 
 	"goarrg.com"
@@ -64,7 +65,7 @@ func (vk *vkInstance) CreateSurface() (uint64, error) {
 		C.vkDestroySurface(vk.cInstance, vk.cSurface)
 	}
 	//nolint:staticcheck
-	if C.SDL_Vulkan_CreateSurface(Platform.display.mainWindow.cWindow, vk.cInstance, &vk.cSurface) != C.SDL_TRUE {
+	if !C.SDL_Vulkan_CreateSurface(Platform.display.mainWindow.cWindow, vk.cInstance, nil, &vk.cSurface) {
 		err := debug.Errorf("Failed to create surface: %s", C.GoString(C.SDL_GetError()))
 		C.SDL_ClearError()
 		return 0, err
@@ -184,25 +185,16 @@ func vkInit(r goarrg.VkRenderer) error {
 
 	{
 		cNumSDLExt := C.uint(0)
-		if C.SDL_Vulkan_GetInstanceExtensions(Platform.display.mainWindow.cWindow, &cNumSDLExt, nil) != C.SDL_TRUE {
+		cSDLExt := C.SDL_Vulkan_GetInstanceExtensions(&cNumSDLExt)
+		if cSDLExt == nil {
 			err := debug.Errorf("Failed to get list of SDL required vulkan extensions: %s", C.GoString(C.SDL_GetError()))
 			C.SDL_ClearError()
 			return err
 		}
-
-		cExt := (**C.char)(C.calloc((C.size_t(cNumSDLExt) + C.size_t(len(vkCfg.Extensions))), C.size_t(unsafe.Sizeof((*C.char)(nil)))))
-		defer C.free(unsafe.Pointer(cExt))
-		ext := unsafe.Slice((**C.char)(unsafe.Pointer(cExt)), int(cNumSDLExt)+len(vkCfg.Extensions))
-
-		if C.SDL_Vulkan_GetInstanceExtensions(Platform.display.mainWindow.cWindow, &cNumSDLExt, cExt) != C.SDL_TRUE {
-			err := debug.Errorf("Failed to get list of SDL required vulkan extensions: %s", C.GoString(C.SDL_GetError()))
-			C.SDL_ClearError()
-			return err
-		}
-
+		cExt := unsafe.Slice((**C.char)(unsafe.Pointer(cSDLExt)), int(cNumSDLExt))
 		for i, e := range vkCfg.Extensions {
-			ext[int(cNumSDLExt)+i] = C.CString(e)
-			defer C.free(unsafe.Pointer(ext[int(cNumSDLExt)+i]))
+			cExt = append(cExt, C.CString(e))
+			defer C.free(unsafe.Pointer(cExt[int(cNumSDLExt)+i]))
 		}
 
 		cLayers := (**C.char)(C.calloc(C.size_t(len(vkCfg.Layers)), C.size_t(unsafe.Sizeof((*C.char)(nil)))))
@@ -229,13 +221,14 @@ func vkInit(r goarrg.VkRenderer) error {
 			enabledLayerCount:       C.uint32_t(len(vkCfg.Layers)),
 			ppEnabledLayerNames:     cLayers,
 			enabledExtensionCount:   cNumSDLExt + C.uint32_t(len(vkCfg.Extensions)),
-			ppEnabledExtensionNames: cExt,
+			ppEnabledExtensionNames: unsafe.SliceData(cExt),
 		}
+		runtime.KeepAlive(cExt)
 
 		//nolint:staticcheck
 		if ret := C.vkCreateInstance(cVkAInfo, cVkCInfo, &cInstance); ret != C.VK_SUCCESS {
 			for i := 0; i < int(cNumSDLExt); i++ {
-				vkCfg.Extensions = append(vkCfg.Extensions, C.GoString(ext[i]))
+				vkCfg.Extensions = append(vkCfg.Extensions, C.GoString(cExt[i]))
 			}
 
 			if ret == C.VK_ERROR_INVALID_EXTERNAL_HANDLE {
@@ -250,7 +243,7 @@ func vkInit(r goarrg.VkRenderer) error {
 		cfg:      vkCfg,
 		renderer: r,
 		vkInstance: &vkInstance{
-			procAddr:  uintptr(C.SDL_Vulkan_GetVkGetInstanceProcAddr()),
+			procAddr:  uintptr(unsafe.Pointer(C.SDL_Vulkan_GetVkGetInstanceProcAddr())),
 			cInstance: cInstance,
 		},
 	}
@@ -273,7 +266,7 @@ func (vkw *vkWindow) resize(w int, h int) {
 
 	if w != 0 && h != 0 {
 		var cW, cH C.int
-		C.SDL_Vulkan_GetDrawableSize(Platform.display.mainWindow.cWindow, &cW, &cH)
+		C.SDL_GetWindowSizeInPixels(Platform.display.mainWindow.cWindow, &cW, &cH)
 		vkw.renderer.Resize(int(cW), int(cH))
 	} else {
 		vkw.renderer.Resize(0, 0)

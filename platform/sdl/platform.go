@@ -17,9 +17,10 @@ limitations under the License.
 package sdl
 
 /*
-	#cgo pkg-config: sdl2
-	#define SDL_MAIN_HANDLED
-	#include <SDL2/SDL.h>
+	#cgo pkg-config: sdl3
+	#define SDL_MAIN_HANDLED 1
+	#include <SDL3/SDL.h>
+	#include <SDL3/SDL_main.h>
 	#include "event.h"
 
 	extern int processEvents(goEvent*);
@@ -62,17 +63,17 @@ func (*platform) Init() (goarrg.PlatformInterface, error) {
 	initOnce.Do(func() {
 		Platform.logger.IPrintf("Platform initializing")
 
-		C.SDL_EventState(C.SDL_KEYDOWN, C.SDL_DISABLE)
-		C.SDL_EventState(C.SDL_KEYUP, C.SDL_DISABLE)
+		C.SDL_SetEventEnabled(C.SDL_EVENT_KEY_DOWN, false)
+		C.SDL_SetEventEnabled(C.SDL_EVENT_KEY_UP, false)
 
-		C.SDL_EventState(C.SDL_MOUSEMOTION, C.SDL_DISABLE)
-		C.SDL_EventState(C.SDL_MOUSEBUTTONDOWN, C.SDL_DISABLE)
-		C.SDL_EventState(C.SDL_MOUSEBUTTONUP, C.SDL_DISABLE)
+		C.SDL_SetEventEnabled(C.SDL_EVENT_MOUSE_MOTION, false)
+		C.SDL_SetEventEnabled(C.SDL_EVENT_MOUSE_BUTTON_DOWN, false)
+		C.SDL_SetEventEnabled(C.SDL_EVENT_MOUSE_BUTTON_UP, false)
 
 		C.setHints()
 
 		C.SDL_SetMainReady()
-		if C.SDL_Init(C.SDL_INIT_VIDEO) != 0 {
+		if !C.SDL_Init(C.SDL_INIT_VIDEO) {
 			err = debug.Errorf("%s", C.GoString(C.SDL_GetError()))
 			C.SDL_ClearError()
 			return

@@ -17,8 +17,8 @@ limitations under the License.
 package sdl
 
 /*
-	#cgo pkg-config: sdl2
-	#include <SDL2/SDL.h>
+	#cgo pkg-config: sdl3
+	#include <SDL3/SDL.h>
 	#include "event.h"
 */
 import "C"
@@ -120,7 +120,7 @@ func (m *mouse) ActionEndedFor(a input.DeviceAction) bool {
 }
 
 func (m *mouse) update(e C.goEvent) {
-	var cX, cY C.int
+	var cX, cY C.float
 
 	m.lastState = m.currentState
 

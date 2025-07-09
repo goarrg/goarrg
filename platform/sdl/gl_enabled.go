@@ -20,8 +20,8 @@ limitations under the License.
 package sdl
 
 /*
-	#cgo pkg-config: sdl2
-	#include <SDL2/SDL.h>
+	#cgo pkg-config: sdl3
+	#include <SDL3/SDL.h>
 */
 import "C"
 
@@ -87,9 +87,9 @@ func glInit(r goarrg.GLRenderer) error {
 	}
 
 	switch {
-	case C.SDL_GL_SetSwapInterval(-1) == 0:
+	case bool(C.SDL_GL_SetSwapInterval(-1)):
 		Platform.logger.IPrintf("vsync set to late swap tearing")
-	case C.SDL_GL_SetSwapInterval(1) == 0:
+	case bool(C.SDL_GL_SetSwapInterval(1)):
 		C.SDL_ClearError()
 		Platform.logger.IPrintf("vsync enabled")
 	default:
@@ -114,7 +114,7 @@ func (glw *glWindow) resize(w int, h int) {
 
 	if w != 0 && h != 0 {
 		var cW, cH C.int
-		C.SDL_GL_GetDrawableSize(Platform.display.mainWindow.cWindow, &cW, &cH)
+		C.SDL_GetWindowSizeInPixels(Platform.display.mainWindow.cWindow, &cW, &cH)
 		glw.renderer.Resize(int(cW), int(cH))
 	} else {
 		glw.renderer.Resize(0, 0)
@@ -122,5 +122,5 @@ func (glw *glWindow) resize(w int, h int) {
 }
 
 func (glw *glWindow) destroy() {
-	C.SDL_GL_DeleteContext(glw.cContext)
+	C.SDL_GL_DestroyContext(glw.cContext)
 }

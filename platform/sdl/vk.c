@@ -25,9 +25,6 @@ limitations under the License.
 #define VKAPI_PTR
 #endif
 
-typedef struct VkAllocationCallbacks {
-} VkAllocationCallbacks;
-
 typedef void(VKAPI_PTR* PFN_vkVoidFunction)(void);
 typedef PFN_vkVoidFunction(VKAPI_PTR* PFN_vkGetInstanceProcAddr)(
 	VkInstance instance,

@@ -14,46 +14,46 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include "event.h"
 
 void processWindowEvent(goEvent* ge, SDL_WindowEvent e) {
-	switch (e.event) {
-		case SDL_WINDOWEVENT_NONE:
-			ge->windowState = (ge->windowState | WINDOW_CREATED);
-			break;
-		case SDL_WINDOWEVENT_SHOWN:
-		case SDL_WINDOWEVENT_RESTORED:
+	switch (e.type) {
+		case SDL_EVENT_WINDOW_SHOWN:
+		case SDL_EVENT_WINDOW_RESTORED:
 			ge->windowState = (ge->windowState | WINDOW_SHOWN) & ~WINDOW_HIDDEN;
 			break;
-		case SDL_WINDOWEVENT_HIDDEN:
-		case SDL_WINDOWEVENT_MINIMIZED:
+		case SDL_EVENT_WINDOW_HIDDEN:
+		case SDL_EVENT_WINDOW_MINIMIZED:
 			ge->windowState = (ge->windowState | WINDOW_HIDDEN) & ~WINDOW_SHOWN;
 			break;
 
-		case SDL_WINDOWEVENT_MOVED:
-		case SDL_WINDOWEVENT_RESIZED:
+		case SDL_EVENT_WINDOW_MOVED:
+		case SDL_EVENT_WINDOW_RESIZED:
 			ge->windowState = (ge->windowState | WINDOW_RECT_CHANGED);
 			break;
 
-		case SDL_WINDOWEVENT_ENTER:
+		case SDL_EVENT_WINDOW_MOUSE_ENTER:
 			ge->windowState = (ge->windowState | WINDOW_ENTER) & ~WINDOW_LEAVE;
 			break;
-		case SDL_WINDOWEVENT_LEAVE:
+		case SDL_EVENT_WINDOW_MOUSE_LEAVE:
 			ge->windowState = (ge->windowState | WINDOW_LEAVE) & ~WINDOW_ENTER;
 			break;
 
-		case SDL_WINDOWEVENT_FOCUS_GAINED:
+		case SDL_EVENT_WINDOW_FOCUS_GAINED:
 			ge->windowState =
 				(ge->windowState | WINDOW_FOCUS_GAINED) & ~WINDOW_FOCUS_LOST;
 			break;
-		case SDL_WINDOWEVENT_FOCUS_LOST:
+		case SDL_EVENT_WINDOW_FOCUS_LOST:
 			ge->windowState =
 				(ge->windowState | WINDOW_FOCUS_LOST) & ~WINDOW_FOCUS_GAINED;
 			break;
 
-		case SDL_WINDOWEVENT_CLOSE:
+		case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 			ge->windowState = ge->windowState | WINDOW_CLOSE;
+			break;
+
+		default:
 			break;
 	}
 }
@@ -63,17 +63,21 @@ int processEvents(goEvent* ge) {
 	SDL_Event e;
 
 	while (SDL_PollEvent(&e) != 0) {
-		if (e.type == SDL_WINDOWEVENT) {
+		if (e.type == SDL_EVENT_USER) {
+			ge->windowState = (ge->windowState | WINDOW_CREATED);
+		}
+		if (e.type >= SDL_EVENT_WINDOW_FIRST &&
+			e.type <= SDL_EVENT_WINDOW_LAST) {
 			if (e.window.windowID == ge->window &&
 				!(ge->windowState & WINDOW_CLOSE)) {
 				processWindowEvent(ge, e.window);
 			}
 		}
-		if (e.type == SDL_MOUSEWHEEL) {
+		if (e.type == SDL_EVENT_MOUSE_WHEEL) {
 			ge->mouseWheelX = e.wheel.x;
 			ge->mouseWheelY = e.wheel.y;
 		}
-		if (e.type == SDL_QUIT) {
+		if (e.type == SDL_EVENT_QUIT) {
 			// ge->windowState = ge->windowState | WINDOW_CLOSE;
 			alive = 0;
 		}

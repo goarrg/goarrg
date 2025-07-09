@@ -17,11 +17,11 @@ limitations under the License.
 package sdl
 
 /*
-	#cgo pkg-config: sdl2
-	#include <SDL2/SDL.h>
+	#cgo pkg-config: sdl3
+	#include <SDL3/SDL.h>
 
-	static SDL_RWops* RWFromUintptr(uintptr_t ptr, int sz) {
-		return SDL_RWFromConstMem((void*)ptr, sz);
+	static SDL_IOStream* IOFromUintptr(uintptr_t ptr, int sz) {
+		return SDL_IOFromConstMem((void*)ptr, sz);
 	}
 */
 import "C"
@@ -64,10 +64,10 @@ const (
 )
 
 type audioSystem struct {
-	cfg   goarrg.AudioConfig
-	mixer goarrg.Audio
-	cAID  C.SDL_AudioDeviceID
-	buf   []float32
+	cfg     goarrg.AudioConfig
+	mixer   goarrg.Audio
+	cStream *C.SDL_AudioStream
+	buf     []float32
 }
 
 func channelCountToList(n int) ([]audio.Channel, error) {
@@ -201,68 +201,58 @@ func verifyChannelList(list []audio.Channel) ([]audio.Channel, error) {
 }
 
 func decodeWAV(a *asset.File) (audio.Spec, int, []float32, error) {
-	cR := C.RWFromUintptr(C.uintptr_t(a.Uintptr()), C.int(a.Size()))
+	cIO := C.IOFromUintptr(C.uintptr_t(a.Uintptr()), C.int(a.Size()))
 	cSpec := C.SDL_AudioSpec{}
 	cBuf := (*C.Uint8)(nil)
 	cLen := C.Uint32(0)
 
 	//nolint:staticcheck
-	if C.SDL_LoadWAV_RW(cR, 0, &cSpec, &cBuf, &cLen) == nil {
+	if !C.SDL_LoadWAV_IO(cIO, true, &cSpec, &cBuf, &cLen) {
 		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to decode WAV")
 		C.SDL_ClearError()
 		return audio.Spec{}, 0, nil, err
 	}
-
-	defer C.SDL_FreeWAV(cBuf)
+	defer C.SDL_free(unsafe.Pointer(cBuf))
 
 	channels, err := channelCountToList(int(cSpec.channels))
 	if err != nil {
 		return audio.Spec{}, 0, nil, debug.ErrorWrapf(err, "Failed to decode WAV")
 	}
 
-	cCVT := C.SDL_AudioCVT{}
+	cStream := C.SDL_CreateAudioStream(&cSpec, &C.SDL_AudioSpec{
+		freq:     cSpec.freq,
+		format:   C.SDL_AUDIO_F32,
+		channels: cSpec.channels,
+	})
+	if cStream == nil {
+		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to decode WAV")
+		C.SDL_ClearError()
+		return audio.Spec{}, 0, nil, err
+	}
+	defer C.SDL_DestroyAudioStream(cStream)
 
-	//nolint:staticcheck
-	if C.SDL_BuildAudioCVT(&cCVT, cSpec.format, cSpec.channels, cSpec.freq, C.AUDIO_F32SYS, cSpec.channels, cSpec.freq) < 0 {
+	if !C.SDL_PutAudioStreamData(cStream, unsafe.Pointer(cBuf), C.int(cLen)) {
+		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to decode WAV")
+		C.SDL_ClearError()
+		return audio.Spec{}, 0, nil, err
+	}
+	if !C.SDL_FlushAudioStream(cStream) {
+		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to decode WAV")
+		C.SDL_ClearError()
+		return audio.Spec{}, 0, nil, err
+	}
+	samples := int(cLen) / (int(cSpec.format&0xFF) / 8)
+	track := make([]float32, samples)
+	if C.SDL_GetAudioStreamData(cStream, unsafe.Pointer(unsafe.SliceData(track)), C.int(unsafe.Sizeof(float32(0)))*C.int(samples)) == -1 {
 		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to decode WAV")
 		C.SDL_ClearError()
 		return audio.Spec{}, 0, nil, err
 	}
 
-	samples := int(cLen) / (int(cSpec.format&0xFF) / 8)
-	cTrack := unsafe.Slice((*float32)(unsafe.Pointer(cBuf)), samples)
-
-	if cCVT.needed == 1 {
-		sz := samples * int(unsafe.Sizeof(float32(0)))
-		cCVT.len = C.int(cLen)
-		cCVT.buf = (*C.Uint8)(C.malloc(C.size_t(cCVT.len * cCVT.len_mult)))
-
-		defer C.free(unsafe.Pointer(cCVT.buf))
-
-		C.memmove(unsafe.Pointer(cCVT.buf), unsafe.Pointer(cBuf), C.size_t(cLen))
-
-		//nolint:staticcheck
-		if C.SDL_ConvertAudio(&cCVT) < 0 {
-			err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to decode WAV")
-			C.SDL_ClearError()
-			return audio.Spec{}, 0, nil, err
-		}
-
-		if sz != int(cCVT.len_cvt) {
-			return audio.Spec{}, 0, nil, debug.ErrorWrapf(
-				debug.Errorf("Calculated buffer size does not match SDL size, Got: %d SDL: %d",
-					sz, int(cCVT.len_cvt)), "Failed to decode WAV")
-		}
-
-		cTrack = unsafe.Slice((*float32)(unsafe.Pointer(cCVT.buf)), samples)
-	}
-
 	return audio.Spec{
-			Frequency: int(cSpec.freq),
-			Channels:  channels,
-		},
-		samples,
-		append([]float32(nil), cTrack...), nil
+		Frequency: int(cSpec.freq),
+		Channels:  channels,
+	}, samples, track, nil
 }
 
 func (*platform) AudioInit(mixer goarrg.Audio) error {
@@ -275,20 +265,15 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 		return nil
 	}
 
-	if C.SDL_InitSubSystem(C.SDL_INIT_AUDIO) != 0 {
+	if !C.SDL_InitSubSystem(C.SDL_INIT_AUDIO) {
 		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to init SDL audio")
 		C.SDL_ClearError()
 		return err
 	}
 
 	cfg := mixer.AudioConfig()
-
 	if len(cfg.Spec.Channels) == 0 {
 		return debug.ErrorWrapf(debug.Errorf("No channels defined"), "Failed to init SDL audio")
-	}
-
-	if cfg.BufferLength == 0 || (cfg.BufferLength&(cfg.BufferLength-1)) != 0 {
-		return debug.ErrorWrapf(debug.Errorf("BufferLength must be a power of 2"), "Failed to init SDL audio")
 	}
 
 	channels, err := verifyChannelList(cfg.Spec.Channels)
@@ -296,50 +281,35 @@ func (*platform) AudioInit(mixer goarrg.Audio) error {
 		return debug.ErrorWrapf(err, "Failed to init SDL audio")
 	}
 
-	cfg.Spec.Channels = channels
-
-	want := C.SDL_AudioSpec{
+	spec := C.SDL_AudioSpec{
 		freq:     C.int(cfg.Spec.Frequency),
-		format:   C.AUDIO_F32SYS,
-		channels: C.Uint8(len(channels)),
-		samples:  C.Uint16(cfg.BufferLength),
+		format:   C.SDL_AUDIO_F32,
+		channels: C.int(len(channels)),
 	}
-	got := C.SDL_AudioSpec{}
 
 	//nolint:staticcheck
-	cAID := C.SDL_OpenAudioDevice(nil, 0, &want, &got, 0)
-
-	if cAID == 0 {
+	cStream := C.SDL_OpenAudioDeviceStream(C.SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nil, nil)
+	if cStream == nil {
 		err := debug.ErrorWrapf(debug.Errorf("%s", C.GoString(C.SDL_GetError())), "Failed to init SDL audio")
 		C.SDL_ClearError()
 		return err
 	}
-
-	cfg.Spec.Channels, err = channelCountToList(int(got.channels))
-	if err != nil {
-		return debug.ErrorWrapf(err, "Failed to init SDL audio")
-	}
-
-	cfg.Spec.Frequency = int(got.freq)
-	cfg.BufferLength = int(got.samples)
-
 	if err := mixer.Init(platformInterface{}, cfg); err != nil {
 		return debug.ErrorWrapf(err, "Failed to init SDL audio")
 	}
+	C.SDL_ResumeAudioDevice(C.SDL_GetAudioStreamDevice(cStream))
 
-	Platform.audio.cAID = cAID
+	Platform.audio.cStream = cStream
 	Platform.audio.mixer = mixer
 	Platform.audio.cfg = cfg
 	Platform.audio.buf = make([]float32, cfg.Spec.Frequency*len(cfg.Spec.Channels))
-
-	C.SDL_PauseAudioDevice(cAID, 0)
 
 	Platform.logger.IPrintf("Initialized audio device with config: %+v", cfg)
 	return nil
 }
 
 func (a *audioSystem) update() {
-	if a.cAID <= 0 {
+	if a.cStream == nil {
 		return
 	}
 
@@ -355,13 +325,13 @@ func (a *audioSystem) update() {
 	}
 
 	if pushSize > 0 {
-		C.SDL_QueueAudio(a.cAID, unsafe.Pointer(&a.buf[0]), C.uint(pushSize*int(unsafe.Sizeof(float32(0)))))
+		C.SDL_PutAudioStreamData(a.cStream, unsafe.Pointer(unsafe.SliceData(a.buf)), C.int(pushSize*int(unsafe.Sizeof(float32(0)))))
 	}
 }
 
 func (a *audioSystem) destroy() {
-	if a.cAID > 0 {
-		C.SDL_CloseAudioDevice(a.cAID)
+	if a.cStream != nil {
+		C.SDL_DestroyAudioStream(a.cStream)
 	}
 
 	C.SDL_QuitSubSystem(C.SDL_INIT_AUDIO)

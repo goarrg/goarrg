@@ -17,18 +17,19 @@ limitations under the License.
 package sdl
 
 /*
-	#cgo pkg-config: sdl2
-	#include <SDL2/SDL.h>
+	#cgo pkg-config: sdl3
+	#include <SDL3/SDL.h>
 	#include <stdint.h>
+	#include <stdlib.h>
 
 	void setWindowTitle(SDL_Window *window, _GoString_ title) {
 		SDL_SetWindowTitle(window, _GoStringPtr(title));
 	}
 
-	void pushWindowCreatedEvent(uint32_t window) {
+	void pushWindowCreatedEvent(SDL_WindowID window) {
 		SDL_Event e = {};
-		e.type = SDL_WINDOWEVENT;
-		e.window.windowID = window;
+		e.user.type = SDL_EVENT_USER;
+		e.user.code = window;
 		SDL_PushEvent(&e);
 	}
 */
@@ -73,7 +74,7 @@ type window struct {
 	mouseFocus    bool
 }
 
-func createWindow(flags C.uint32_t) error {
+func createWindow(flags C.SDL_WindowFlags) error {
 	if Platform.config.Window.Rect.X < 0 {
 		Platform.config.Window.Rect.X = C.SDL_WINDOWPOS_UNDEFINED
 	}
@@ -89,7 +90,7 @@ func createWindow(flags C.uint32_t) error {
 		{
 			var cRect C.SDL_Rect
 
-			if C.SDL_GetDisplayBounds(0, &cRect) != 0 {
+			if !C.SDL_GetDisplayBounds(0, &cRect) {
 				err := debug.Errorf("%s", C.GoString(C.SDL_GetError()))
 				C.SDL_ClearError()
 				Platform.logger.EPrintf("Failed to create window: %s", err.Error())
@@ -112,19 +113,17 @@ func createWindow(flags C.uint32_t) error {
 
 	cWindow := C.SDL_CreateWindow(
 		cTitle,
-		C.int(rect.X),
-		C.int(rect.Y),
 		C.int(rect.W),
 		C.int(rect.H),
-		C.SDL_WINDOW_HIDDEN|C.SDL_WINDOW_RESIZABLE|C.SDL_WINDOW_ALLOW_HIGHDPI|flags,
+		C.SDL_WINDOW_HIDDEN|C.SDL_WINDOW_RESIZABLE|C.SDL_WINDOW_HIGH_PIXEL_DENSITY|flags,
 	)
-
 	if cWindow == nil {
 		err := debug.Errorf("%s", C.GoString(C.SDL_GetError()))
 		C.SDL_ClearError()
 		Platform.logger.EPrintf("Failed to create window: %s", err.Error())
 		return err
 	}
+	C.SDL_SetWindowPosition(cWindow, C.int(rect.X), C.int(rect.Y))
 
 	Platform.display.mainWindow = &window{
 		cWindow: cWindow,
@@ -140,7 +139,7 @@ func (window *window) processEvent(e windowEvent) {
 	if (e.event & windowEventCreated) != 0 {
 		Platform.logger.VPrintf("Window event created")
 		C.SDL_ShowWindow(window.cWindow)
-		C.SDL_FlushEvent(C.SDL_WINDOWEVENT)
+		C.SDL_FlushEvents(C.SDL_EVENT_WINDOW_FIRST, C.SDL_EVENT_WINDOW_LAST)
 
 		cRect := C.SDL_Rect{}
 		C.SDL_GetWindowPosition(window.cWindow, &cRect.x, &cRect.y)
