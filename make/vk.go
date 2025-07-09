@@ -41,7 +41,7 @@ func installVkHeaders(c VkHeadersConfig) error {
 	installDir := cgodep.InstallDir("vulkan-headers", toolchain.Target{}, toolchain.BuildRelease)
 	var ref git.Ref
 	if c.Branch == "" {
-		refs, err := git.GetRemoteHeads(vkHeadersURL, "*sdk-*")
+		refs, err := git.GetRemoteHeads(vkHeadersURL, "vulkan-sdk-*")
 		if err != nil {
 			return err
 		}
