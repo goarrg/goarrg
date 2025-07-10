@@ -118,9 +118,8 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 	m := cgodep.Meta{
 		Version: sdlVersion,
 		Flags: cgodep.Flags{
-			CFlags:        []string{"-I" + filepath.Join(installDir, "include")},
-			LDFlags:       []string{"-L" + filepath.Join(installDir, "lib")},
-			StaticLDFlags: []string{"-lSDL3-static"},
+			CFlags:  []string{"-I" + filepath.Join(installDir, "include")},
+			LDFlags: []string{"-L" + filepath.Join(installDir, "lib")},
 		},
 	}
 	{
@@ -158,5 +157,11 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 		}
 	}
 	m.Flags.StaticLDFlags = append(m.Flags.LDFlags, m.Flags.StaticLDFlags...)
+	for i, s := range m.Flags.StaticLDFlags {
+		if s == "-lSDL3" {
+			m.Flags.StaticLDFlags[i] = "-lSDL3-static"
+			break
+		}
+	}
 	return cgodep.WriteMetaFile("sdl3", t, c.Build, m)
 }
