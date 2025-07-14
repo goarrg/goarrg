@@ -25,7 +25,7 @@ goarrg requires go 1.23+<br>
 The following list of dependencies assume you are using the make package to install the rest.
 | OS | Dependencies |
 | -- | -- |
-| Ubuntu | sudo apt-get install build-essential cmake libxext-dev libpulse-dev |
+| Ubuntu | sudo apt-get install build-essential cmake libxext-dev libpulse-dev libxi-dev libxcursor-dev |
 | Windows | mingw-w64, cmake |
 
 ### Graphics API Specific
