@@ -30,6 +30,10 @@ func RadToDeg[T constraints.Float](r T) T {
 	return r * (180 / math.Pi)
 }
 
+func Clamp[N constraints.Float | constraints.Integer](t, low, high N) N {
+	return min(max(t, low), high)
+}
+
 func InRange[N constraints.Float | constraints.Integer](t, low, high N) bool {
 	return (t >= low) && (t <= high)
 }
