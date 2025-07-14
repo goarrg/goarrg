@@ -66,7 +66,7 @@ type windowAPI interface {
 
 type window struct {
 	rect          gmath.Rectint
-	bounds        gmath.Bounds3int
+	bounds        gmath.Bounds3f64
 	cWindow       *C.SDL_Window
 	api           windowAPI
 	cID           C.uint32_t
@@ -146,8 +146,8 @@ func (window *window) processEvent(e windowEvent) {
 		C.SDL_GetWindowSize(window.cWindow, &cRect.w, &cRect.h)
 
 		window.rect = gmath.Rectint{X: int(cRect.x), Y: int(cRect.y), W: int(cRect.w), H: int(cRect.h)}
-		window.bounds.Min = gmath.Vector3int{X: window.rect.X, Y: window.rect.Y}
-		window.bounds.Max = gmath.Vector3int{X: window.rect.W, Y: window.rect.H}.Add(window.bounds.Min)
+		window.bounds.Min = gmath.Vector3f64{X: float64(window.rect.X), Y: float64(window.rect.Y)}
+		window.bounds.Max = gmath.Vector3f64{X: float64(window.rect.W), Y: float64(window.rect.H)}.Add(window.bounds.Min)
 
 		// we will always have keyboard focus at this point
 		window.keyboardFocus = true
@@ -168,8 +168,8 @@ func (window *window) processEvent(e windowEvent) {
 
 		oldRect := window.rect
 		window.rect = gmath.Rectint{X: int(cRect.x), Y: int(cRect.y), W: int(cRect.w), H: int(cRect.h)}
-		window.bounds.Min = gmath.Vector3int{X: window.rect.X, Y: window.rect.Y}
-		window.bounds.Max = gmath.Vector3int{X: window.rect.W, Y: window.rect.H}.Add(window.bounds.Min)
+		window.bounds.Min = gmath.Vector3f64{X: float64(window.rect.X), Y: float64(window.rect.Y)}
+		window.bounds.Max = gmath.Vector3f64{X: float64(window.rect.W), Y: float64(window.rect.H)}.Add(window.bounds.Min)
 
 		if oldRect.W != window.rect.W || oldRect.H != window.rect.H {
 			window.api.resize(window.rect.W, window.rect.H)

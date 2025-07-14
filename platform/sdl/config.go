@@ -43,9 +43,15 @@ type WindowConfig struct {
 	Mode  WindowMode
 }
 
+type DebugConfig struct {
+	// SafeMouse enables debugger safe mouse modes, linux does not restore the mouse to useable conditions on debug pause.
+	SafeMouse bool
+}
+
 type Config struct {
 	Audio  AudioConfig
 	Window WindowConfig
+	Debug  DebugConfig
 }
 
 func Setup(cfg Config) error {

@@ -45,10 +45,15 @@ type platform struct {
 	audio   audioSystem
 	display displaySystem
 	input   inputSystem
+
+	taskChan chan func()
 }
 
 var (
-	Platform                 = &platform{logger: debug.NewLogger("sdl")}
+	Platform = &platform{
+		logger:   debug.NewLogger("sdl"),
+		taskChan: make(chan func(), 32),
+	}
 	_        goarrg.Platform = Platform
 	initOnce                 = sync.Once{}
 )
@@ -94,6 +99,16 @@ func (*platform) Init() (goarrg.PlatformInterface, error) {
 
 func (*platform) Update() {
 	Platform.audio.update()
+
+loop:
+	for {
+		select {
+		case task := <-Platform.taskChan:
+			task()
+		default:
+			break loop
+		}
+	}
 
 	cEvent := C.goEvent{
 		window: Platform.display.mainWindow.cID,
