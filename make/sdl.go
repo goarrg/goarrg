@@ -36,9 +36,10 @@ const (
 )
 
 type SDLConfig struct {
-	Install bool
-	Build   toolchain.Build
-	Tag     string
+	Install     bool
+	ForceStatic bool
+	Build       toolchain.Build
+	Tag         string
 }
 
 func installSDL(t toolchain.Target, c SDLConfig) error {
@@ -61,7 +62,11 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 			}
 			ref = refs[0]
 		}
-		sdlVersion = strings.TrimPrefix(ref.Name, "refs/tags/") + sdlBuild
+		if c.ForceStatic {
+			sdlVersion = strings.TrimPrefix(ref.Name, "refs/tags/") + "-static" + sdlBuild
+		} else {
+			sdlVersion = strings.TrimPrefix(ref.Name, "refs/tags/") + sdlBuild
+		}
 		if cgodep.ReadVersion(installDir) == sdlVersion {
 			return cgodep.SetActiveBuild("sdl3", t, c.Build)
 		}
@@ -82,14 +87,18 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 		}
 		defer os.RemoveAll(buildDir)
 
-		if err := cmake.Configure(t, c.Build, srcDir, buildDir, installDir, map[string]string{
+		defs := map[string]string{
 			"CMAKE_SKIP_INSTALL_RPATH": "1", "CMAKE_SKIP_RPATH": "1", "SDL_RPATH": "0",
 			"SDL_STATIC": "1",
 			"SDL_CAMERA": "0", "SDL_RENDER": "0", "SDL_GPU": "0",
 			"SDL_DUMMYAUDIO": "0", "SDL_DUMMYVIDEO": "0",
 			"SDL_TEST_LIBRARY": "0",
 			"CPACK_SOURCE_ZIP": "0", "CPACK_SOURCE_7Z": "0", "SDL_INSTALL_CPACK": "0",
-		}); err != nil {
+		}
+		if c.ForceStatic {
+			defs["SDL_SHARED"] = "0"
+		}
+		if err := cmake.Configure(t, c.Build, srcDir, buildDir, installDir, defs); err != nil {
 			return err
 		}
 		if err := cmake.Build(buildDir); err != nil {
@@ -162,6 +171,9 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 			m.Flags.StaticLDFlags[i] = "-lSDL3-static"
 			break
 		}
+	}
+	if c.ForceStatic {
+		m.Flags.LDFlags = m.Flags.StaticLDFlags
 	}
 	return cgodep.WriteMetaFile("sdl3", t, c.Build, m)
 }
