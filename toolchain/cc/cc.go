@@ -125,7 +125,7 @@ type Config struct {
 }
 
 func Setup(c Config) {
-	debug.IPrintf("Setting up gcc toolchain")
+	debug.IPrintf("Setting up C/C++ toolchain")
 
 	if !Installed(c) {
 		panic(debug.Errorf("Compiler not installed for Config: %+v", c))
