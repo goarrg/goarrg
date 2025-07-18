@@ -11,13 +11,13 @@ It is not a goal however to make it easy to rip out a piece and replace it later
 	 - ~~Maths~~
 	 - ~~Glue APIs~~
 	 - ~~Basic Tooling~~
- - Renderer
- - ECS
+ - Renderer? (we may never release an actual renderer)
+	- ~~RHI~~
+ - ECS?
  - Editor
 
 ## Supported Platforms
-Currently goarrg only supports Ubuntu (tested on 20.04 LTS) and Windows 10, 386 and amd64. Vulkan is only supported on amd64.
-However, there is nothing preventing you from creating a platform package to support other platforms.
+Currently goarrg only supports Ubuntu (tested on 24.04 LTS) and Windows 10, 386 and amd64. Vulkan is only tested on amd64.
 
 ## Dependencies
 
@@ -26,7 +26,7 @@ The following list of dependencies assume you are using the make package to inst
 | OS | Dependencies |
 | -- | -- |
 | Ubuntu | sudo apt-get install build-essential cmake libxext-dev libpulse-dev libxi-dev libxcursor-dev |
-| Windows | mingw-w64, cmake |
+| Windows | llvm-mingw, cmake |
 
 ### Graphics API Specific
 | OS | API | Dependencies |
