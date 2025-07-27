@@ -58,6 +58,13 @@ func (e Extent2[T]) Max(o Extent2[T]) Extent2[T] {
 	}
 }
 
+func (e Extent2[T]) Clamp(lo, hi Extent2[T]) Extent2[T] {
+	return Extent2[T]{
+		X: Clamp(e.X, lo.X, hi.X),
+		Y: Clamp(e.Y, lo.Y, hi.Y),
+	}
+}
+
 type Extent3[T constraints.Integer | constraints.Float] struct {
 	X, Y, Z T
 }
@@ -98,5 +105,13 @@ func (e Extent3[T]) Max(o Extent3[T]) Extent3[T] {
 		X: max(e.X, o.X),
 		Y: max(e.Y, o.Y),
 		Z: max(e.Z, o.Z),
+	}
+}
+
+func (e Extent3[T]) Clamp(lo, hi Extent3[T]) Extent3[T] {
+	return Extent3[T]{
+		X: Clamp(e.X, lo.X, hi.X),
+		Y: Clamp(e.Y, lo.Y, hi.Y),
+		Z: Clamp(e.Z, lo.Z, hi.Z),
 	}
 }
