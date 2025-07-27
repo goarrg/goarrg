@@ -61,8 +61,8 @@ func (v Vector2i[T]) Max(v2 Vector2i[T]) Vector2i[T] {
 
 func (v Vector2i[T]) Clamp(lo, hi Vector2i[T]) Vector2i[T] {
 	return Vector2i[T]{
-		X: max(lo.X, min(v.X, hi.X)),
-		Y: max(lo.Y, min(v.Y, hi.Y)),
+		X: Clamp(v.X, lo.X, hi.X),
+		Y: Clamp(v.Y, lo.Y, hi.Y),
 	}
 }
 

@@ -74,9 +74,9 @@ func (v Vector3f[T]) Max(v2 Vector3f[T]) Vector3f[T] {
 
 func (v Vector3f[T]) Clamp(lo, hi Vector3f[T]) Vector3f[T] {
 	return Vector3f[T]{
-		X: max(lo.X, min(v.X, hi.X)),
-		Y: max(lo.Y, min(v.Y, hi.Y)),
-		Z: max(lo.Z, min(v.Z, hi.Z)),
+		X: Clamp(v.X, lo.X, hi.X),
+		Y: Clamp(v.Y, lo.Y, hi.Y),
+		Z: Clamp(v.Z, lo.Z, hi.Z),
 	}
 }
 

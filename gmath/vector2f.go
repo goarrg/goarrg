@@ -68,8 +68,8 @@ func (v Vector2f[T]) Max(v2 Vector2f[T]) Vector2f[T] {
 
 func (v Vector2f[T]) Clamp(lo, hi Vector2f[T]) Vector2f[T] {
 	return Vector2f[T]{
-		X: max(lo.X, min(v.X, hi.X)),
-		Y: max(lo.Y, min(v.Y, hi.Y)),
+		X: Clamp(v.X, lo.X, hi.X),
+		Y: Clamp(v.Y, lo.Y, hi.Y),
 	}
 }
 
