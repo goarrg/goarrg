@@ -50,7 +50,7 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 	{
 		var ref git.Ref
 		if c.Tag == "" {
-			refs, err := git.GetRemoteTags(sdlURL, "release-*")
+			refs, err := git.GetRemoteTags(sdlURL, "release-3*")
 			if err != nil {
 				return err
 			}
