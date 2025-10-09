@@ -19,18 +19,22 @@ limitations under the License.
 
 void processWindowEvent(goEvent* ge, SDL_WindowEvent e) {
 	switch (e.type) {
-		case SDL_EVENT_WINDOW_SHOWN:
-		case SDL_EVENT_WINDOW_RESTORED:
-			ge->windowState = (ge->windowState | WINDOW_SHOWN) & ~WINDOW_HIDDEN;
-			break;
 		case SDL_EVENT_WINDOW_HIDDEN:
 		case SDL_EVENT_WINDOW_MINIMIZED:
-			ge->windowState = (ge->windowState | WINDOW_HIDDEN) & ~WINDOW_SHOWN;
+			ge->windowState =
+				(ge->windowState | WINDOW_HIDDEN) & ~WINDOW_SURFACE_CHANGED;
 			break;
 
 		case SDL_EVENT_WINDOW_MOVED:
 		case SDL_EVENT_WINDOW_RESIZED:
 			ge->windowState = (ge->windowState | WINDOW_RECT_CHANGED);
+			break;
+
+		case SDL_EVENT_WINDOW_SHOWN:
+		case SDL_EVENT_WINDOW_RESTORED:
+		case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+			ge->windowState =
+				(ge->windowState | WINDOW_SURFACE_CHANGED) & ~WINDOW_HIDDEN;
 			break;
 
 		case SDL_EVENT_WINDOW_MOUSE_ENTER:

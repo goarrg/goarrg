@@ -61,11 +61,20 @@ func (d *displaySystem) hasMouseFocus() bool {
 }
 
 func (d *displaySystem) pointInsideWindow(p gmath.Point3f64) bool {
-	return d.mainWindow.bounds.CheckPoint(p)
+	return d.mainWindow.windowExtent.CheckPoint(p.Subtract(gmath.Vector3f64(d.mainWindow.windowPos)))
 }
 
 func (d *displaySystem) globalPointToRelativePoint(p gmath.Point3f64) gmath.Point3f64 {
-	return gmath.Point3f64(gmath.Vector3f64(p).Subtract(d.mainWindow.bounds.Min))
+	p = d.mainWindow.windowExtent.ClampPoint(p.Subtract(gmath.Vector3f64(d.mainWindow.windowPos)))
+	if d.mainWindow.windowExtent == d.mainWindow.surfaceExtent {
+		return p
+	}
+
+	return gmath.Point3f64(
+		gmath.Vector3f64(p).
+			ScaleInverse(gmath.Vector3f64(d.mainWindow.windowExtent)).
+			Scale(gmath.Vector3f64(d.mainWindow.surfaceExtent)),
+	)
 }
 
 func (d *displaySystem) destroy() {

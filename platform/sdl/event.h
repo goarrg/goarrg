@@ -18,22 +18,20 @@ limitations under the License.
 
 #include <stdint.h>
 
-// clang-format off
-#define WINDOW_CREATED      (0x1u << 0)
+#define WINDOW_CREATED		   (0x1u << 0)
 
-#define WINDOW_SHOWN        (0x1u << 1)
-#define WINDOW_HIDDEN       (0x1u << 2)
+#define WINDOW_HIDDEN		   (0x1u << 1)
 
-#define WINDOW_RECT_CHANGED (0x1u << 3)
+#define WINDOW_RECT_CHANGED	   (0x1u << 2)
+#define WINDOW_SURFACE_CHANGED (0x1u << 3)
 
-#define WINDOW_ENTER        (0x1u << 4)
-#define WINDOW_LEAVE        (0x1u << 5)
+#define WINDOW_ENTER		   (0x1u << 4)
+#define WINDOW_LEAVE		   (0x1u << 5)
 
-#define WINDOW_FOCUS_GAINED (0x1u << 6)
-#define WINDOW_FOCUS_LOST   (0x1u << 7)
+#define WINDOW_FOCUS_GAINED	   (0x1u << 6)
+#define WINDOW_FOCUS_LOST	   (0x1u << 7)
 
-#define WINDOW_CLOSE        (0x1u << 8)
-// clang-format on
+#define WINDOW_CLOSE		   (0x1u << 8)
 
 typedef struct {
 	uint32_t window;

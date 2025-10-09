@@ -152,9 +152,6 @@ type vkWindow struct {
 	cfg        goarrg.VkConfig
 	renderer   goarrg.VkRenderer
 	vkInstance *vkInstance
-
-	windowW int
-	windowH int
 }
 
 func vkInit(r goarrg.VkRenderer) error {
@@ -261,16 +258,7 @@ func vkInit(r goarrg.VkRenderer) error {
 }
 
 func (vkw *vkWindow) resize(w int, h int) {
-	vkw.windowW = w
-	vkw.windowH = h
-
-	if w != 0 && h != 0 {
-		var cW, cH C.int
-		C.SDL_GetWindowSizeInPixels(Platform.display.mainWindow.cWindow, &cW, &cH)
-		vkw.renderer.Resize(int(cW), int(cH))
-	} else {
-		vkw.renderer.Resize(0, 0)
-	}
+	vkw.renderer.Resize(w, h)
 }
 
 func (vkw *vkWindow) destroy() {

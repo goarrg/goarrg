@@ -43,9 +43,6 @@ func (gl *glInstance) SwapBuffers() {
 type glWindow struct {
 	renderer goarrg.GLRenderer
 	cContext C.SDL_GLContext
-
-	windowW int
-	windowH int
 }
 
 func glInit(r goarrg.GLRenderer) error {
@@ -109,16 +106,7 @@ func glInit(r goarrg.GLRenderer) error {
 }
 
 func (glw *glWindow) resize(w int, h int) {
-	glw.windowW = w
-	glw.windowH = h
-
-	if w != 0 && h != 0 {
-		var cW, cH C.int
-		C.SDL_GetWindowSizeInPixels(Platform.display.mainWindow.cWindow, &cW, &cH)
-		glw.renderer.Resize(int(cW), int(cH))
-	} else {
-		glw.renderer.Resize(0, 0)
-	}
+	glw.renderer.Resize(w, h)
 }
 
 func (glw *glWindow) destroy() {

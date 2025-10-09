@@ -5,4 +5,5 @@ TabWidth: 4
 UseTab: Always
 CommentPragmas: '^[^ ]'
 SortIncludes: false
+AlignConsecutiveMacros: AcrossEmptyLines
 ---

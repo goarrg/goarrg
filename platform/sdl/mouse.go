@@ -202,13 +202,13 @@ func (m *mouse) SetMode(mode input.MouseMode) {
 				if Platform.config.Debug.SafeMouse {
 					m.mode = input.MouseModeRelative
 					C.SDL_WarpMouseInWindow(Platform.display.mainWindow.cWindow,
-						C.float(Platform.display.mainWindow.rect.W)/2, C.float(Platform.display.mainWindow.rect.H)/2)
+						C.float(Platform.display.mainWindow.windowExtent.X)/2, C.float(Platform.display.mainWindow.windowExtent.Y)/2)
 					C.SDL_ShowCursor()
 				} else if !C.SDL_SetWindowRelativeMouseMode(Platform.display.mainWindow.cWindow, true) {
 					m.mode = input.MouseModeRelative
 					C.SDL_HideCursor()
 					C.SDL_WarpMouseInWindow(Platform.display.mainWindow.cWindow,
-						C.float(Platform.display.mainWindow.rect.W)/2, C.float(Platform.display.mainWindow.rect.H)/2)
+						C.float(Platform.display.mainWindow.windowExtent.X)/2, C.float(Platform.display.mainWindow.windowExtent.Y)/2)
 				}
 			}
 		}()
@@ -233,7 +233,6 @@ func (m *mouse) update(e C.goEvent) {
 	switch {
 	case m.mode == input.MouseModeGrabbed:
 		flushMouse = true
-		pos = Platform.display.mainWindow.bounds.ClampPoint(pos)
 		pos = Platform.display.globalPointToRelativePoint(pos)
 		C.SDL_WarpMouseInWindow(Platform.display.mainWindow.cWindow,
 			C.float(pos.X), C.float(pos.Y))
@@ -241,8 +240,8 @@ func (m *mouse) update(e C.goEvent) {
 		flushMouse = true
 		pos = Platform.display.globalPointToRelativePoint(pos)
 		C.SDL_WarpMouseInWindow(Platform.display.mainWindow.cWindow,
-			C.float(Platform.display.mainWindow.rect.W)/2, C.float(Platform.display.mainWindow.rect.H)/2)
-	case !Platform.display.mainWindow.bounds.CheckPoint(pos):
+			C.float(Platform.display.mainWindow.windowExtent.X)/2, C.float(Platform.display.mainWindow.windowExtent.Y)/2)
+	case !Platform.display.pointInsideWindow(pos):
 		m.currentState = 0
 		m.motionDelta = input.Axis{}
 		m.wheelDelta = input.Axis{}

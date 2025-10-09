@@ -21,6 +21,7 @@ package sdl
 	#include <SDL3/SDL.h>
 	#include <stdint.h>
 	#include <stdlib.h>
+	#include "event.h"
 
 	void setWindowTitle(SDL_Window *window, _GoString_ title) {
 		SDL_SetWindowTitle(window, _GoStringPtr(title));
@@ -42,19 +43,6 @@ import (
 	"goarrg.com/gmath"
 )
 
-//nolint:deadcode,varcheck,unused
-const (
-	windowEventCreated uint32 = (1 << iota)
-	windowEventShown
-	windowEventHidden
-	windowEventRectChanged
-	windowEventEnter
-	windowEventLeave
-	windowEventFocusGained
-	windowEventFocusLost
-	windowEventClose
-)
-
 type windowEvent struct {
 	event uint32
 }
@@ -65,8 +53,9 @@ type windowAPI interface {
 }
 
 type window struct {
-	rect          gmath.Rectint
-	bounds        gmath.Bounds3f64
+	windowPos     gmath.Point3f64
+	windowExtent  gmath.Extent3f64
+	surfaceExtent gmath.Extent3f64
 	cWindow       *C.SDL_Window
 	api           windowAPI
 	cID           C.uint32_t
@@ -136,7 +125,7 @@ func createWindow(flags C.SDL_WindowFlags) error {
 }
 
 func (window *window) processEvent(e windowEvent) {
-	if (e.event & windowEventCreated) != 0 {
+	if (e.event & C.WINDOW_CREATED) != 0 {
 		Platform.logger.VPrintf("Window event created")
 		C.SDL_ShowWindow(window.cWindow)
 		C.SDL_FlushEvents(C.SDL_EVENT_WINDOW_FIRST, C.SDL_EVENT_WINDOW_LAST)
@@ -145,9 +134,10 @@ func (window *window) processEvent(e windowEvent) {
 		C.SDL_GetWindowPosition(window.cWindow, &cRect.x, &cRect.y)
 		C.SDL_GetWindowSize(window.cWindow, &cRect.w, &cRect.h)
 
-		window.rect = gmath.Rectint{X: int(cRect.x), Y: int(cRect.y), W: int(cRect.w), H: int(cRect.h)}
-		window.bounds.Min = gmath.Vector3f64{X: float64(window.rect.X), Y: float64(window.rect.Y)}
-		window.bounds.Max = gmath.Vector3f64{X: float64(window.rect.W), Y: float64(window.rect.H)}.Add(window.bounds.Min)
+		window.windowPos = gmath.Point3f64{X: float64(cRect.x), Y: float64(cRect.y)}
+		window.windowExtent = gmath.Extent3f64{
+			X: float64(cRect.w), Y: float64(cRect.h),
+		}
 
 		// we will always have keyboard focus at this point
 		window.keyboardFocus = true
@@ -160,48 +150,55 @@ func (window *window) processEvent(e windowEvent) {
 		window.mouseFocus = true
 	}
 
-	if (e.event & windowEventRectChanged) != 0 {
+	if (e.event & C.WINDOW_RECT_CHANGED) != 0 {
 		Platform.logger.VPrintf("Window event rect changed")
 		cRect := C.SDL_Rect{}
 		C.SDL_GetWindowPosition(window.cWindow, &cRect.x, &cRect.y)
 		C.SDL_GetWindowSize(window.cWindow, &cRect.w, &cRect.h)
 
-		oldRect := window.rect
-		window.rect = gmath.Rectint{X: int(cRect.x), Y: int(cRect.y), W: int(cRect.w), H: int(cRect.h)}
-		window.bounds.Min = gmath.Vector3f64{X: float64(window.rect.X), Y: float64(window.rect.Y)}
-		window.bounds.Max = gmath.Vector3f64{X: float64(window.rect.W), Y: float64(window.rect.H)}.Add(window.bounds.Min)
-
-		if oldRect.W != window.rect.W || oldRect.H != window.rect.H {
-			window.api.resize(window.rect.W, window.rect.H)
+		window.windowPos = gmath.Point3f64{X: float64(cRect.x), Y: float64(cRect.y)}
+		window.windowExtent = gmath.Extent3f64{
+			X: float64(cRect.w), Y: float64(cRect.h),
 		}
-	} else if (e.event & windowEventShown) != 0 {
-		Platform.logger.VPrintf("Window event shown")
-		window.api.resize(window.rect.W, window.rect.H)
 	}
 
-	if (e.event & windowEventFocusGained) != 0 {
+	if (e.event & C.WINDOW_SURFACE_CHANGED) != 0 {
+		Platform.logger.VPrintf("Window event surface changed")
+		var cW, cH C.int
+		C.SDL_GetWindowSizeInPixels(Platform.display.mainWindow.cWindow, &cW, &cH)
+		newExtent := gmath.Extent3f64{
+			X: float64(cW), Y: float64(cH),
+		}
+		if window.surfaceExtent != newExtent {
+			window.surfaceExtent = newExtent
+			window.api.resize(int(cW), int(cH))
+		}
+	}
+
+	if (e.event & C.WINDOW_FOCUS_GAINED) != 0 {
 		Platform.logger.VPrintf("Window event focus gained")
 		window.keyboardFocus = true
 	}
 
-	if (e.event & windowEventFocusLost) != 0 {
+	if (e.event & C.WINDOW_FOCUS_LOST) != 0 {
 		Platform.logger.VPrintf("Window event focus lost")
 		window.keyboardFocus = false
 	}
 
-	if (e.event & windowEventEnter) != 0 {
+	if (e.event & C.WINDOW_ENTER) != 0 {
 		Platform.logger.VPrintf("Window event enter")
 		window.mouseFocus = true
 	}
 
-	if (e.event & windowEventLeave) != 0 {
+	if (e.event & C.WINDOW_LEAVE) != 0 {
 		Platform.logger.VPrintf("Window event leave")
 		window.mouseFocus = false
 	}
 
-	if (e.event & windowEventHidden) != 0 {
+	if (e.event & C.WINDOW_HIDDEN) != 0 {
 		Platform.logger.VPrintf("Window event hidden")
 		window.api.resize(0, 0)
+		window.surfaceExtent = gmath.Extent3f64{}
 	}
 }
 

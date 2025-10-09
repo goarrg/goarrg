@@ -26,10 +26,10 @@ limitations under the License.
 #define VK_MAKE_API_VERSION(variant, major, minor, patch)          \
 	((((uint32_t)(variant)) << 29) | (((uint32_t)(major)) << 22) | \
 	 (((uint32_t)(minor)) << 12) | ((uint32_t)(patch)))
-#define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)
-#define VK_DEFINE_HANDLE(object) typedef struct object##_T* object;
+#define VK_API_VERSION_1_0						  VK_MAKE_API_VERSION(0, 1, 0, 0)
+#define VK_DEFINE_HANDLE(object)				  typedef struct object##_T* object;
 #define VK_DEFINE_NON_DISPATCHABLE_HANDLE(object) typedef uint64_t object;
-#define VK_NULL_HANDLE 0ULL
+#define VK_NULL_HANDLE							  0ULL
 
 VK_DEFINE_HANDLE(VkInstance)
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkSurfaceKHR)
