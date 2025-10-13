@@ -45,6 +45,7 @@ func Install() {
 		panic(err)
 	}
 	toolchain.EnvRegister("CGODEP_PATH", filepath.Join(toolchain.WorkingModuleDataDir(), "cgodep"))
+	toolchain.EnvRegister("CGODEP_PKG_CONFIG", "pkg-config")
 	toolchain.EnvSet("PKG_CONFIG", toolFile)
 }
 

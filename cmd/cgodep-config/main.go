@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 
@@ -29,17 +30,31 @@ import (
 
 func main() {
 	cFlags := false
+	cFlagsOnlyPath := false
+	cFlagsOnlyOther := false
 	libs := false
+	libsOnlyPath := false
+	libsOnly := false
+	libsOnlyOther := false
 	static := false
 	version := false
 	exists := false
+	modVersion := false
+	variable := ""
 	flag.BoolVar(&cFlags, "cflags", false, "")
+	flag.BoolVar(&cFlagsOnlyPath, "cflags-only-I", false, "")
+	flag.BoolVar(&cFlagsOnlyOther, "cflags-only-other", false, "")
 	flag.BoolVar(&libs, "libs", false, "")
+	flag.BoolVar(&libsOnlyPath, "libs-only-L", false, "")
+	flag.BoolVar(&libsOnly, "libs-only-l", false, "")
+	flag.BoolVar(&libsOnlyOther, "libs-only-other", false, "")
 	flag.BoolVar(&static, "static", false, "")
 	flag.BoolVar(&version, "version", false, "")
 	flag.BoolVar(&exists, "exists", false, "")
+	flag.BoolVar(&modVersion, "modversion", false, "")
 	flag.Bool("print-errors", false, "")
 	flag.Bool("short-errors", false, "")
+	flag.StringVar(&variable, "variable", "", "")
 	flag.Parse()
 
 	if version {
@@ -77,8 +92,54 @@ func main() {
 
 	outputFlags, err := cgodep.Resolve(t, mode, flag.Args()...)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		fallback := toolchain.EnvGet("CGODEP_PKG_CONFIG")
+		if fallback == "" {
+			fallback = "pkg-config"
+		}
+		args := []string{}
+
+		if cFlags {
+			args = append(args, "--cflags")
+		}
+		if cFlagsOnlyPath {
+			args = append(args, "--cflags-only-I")
+		}
+		if cFlagsOnlyOther {
+			args = append(args, "--cflags-only-other")
+		}
+
+		if libs {
+			args = append(args, "--libs")
+		}
+		if libsOnlyPath {
+			args = append(args, "--libs-only-L")
+		}
+		if libsOnly {
+			args = append(args, "--libs-only-l")
+		}
+		if libsOnlyOther {
+			args = append(args, "--libs-only-other")
+		}
+
+		if static {
+			args = append(args, "--static")
+		}
+		if modVersion {
+			args = append(args, "--modversion")
+		}
+		if variable != "" {
+			args = append(args, "--variable", variable)
+		}
+		args = append(args, flag.Args()...)
+
+		ex := exec.Command(fallback, args...)
+		ex.Env = os.Environ()
+		ex.Stdout = os.Stdout
+		ex.Stderr = os.Stderr
+		if ex.Run() != nil {
+			os.Exit(1)
+		}
+		os.Exit(0)
 	}
 	// we need to escape "\"
 	for _, f := range outputFlags {
