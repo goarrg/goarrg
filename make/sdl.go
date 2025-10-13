@@ -92,8 +92,8 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 			"SDL_STATIC": "1",
 			"SDL_CAMERA": "0", "SDL_RENDER": "0", "SDL_GPU": "0",
 			"SDL_DUMMYAUDIO": "0", "SDL_DUMMYVIDEO": "0",
-			"SDL_TEST_LIBRARY": "0",
-			"CPACK_SOURCE_ZIP": "0", "CPACK_SOURCE_7Z": "0", "SDL_INSTALL_CPACK": "0",
+			"SDL_TEST_LIBRARY":  "0",
+			"SDL_INSTALL_CPACK": "0",
 		}
 		if c.ForceStatic {
 			defs["SDL_SHARED"] = "0"
