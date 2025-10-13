@@ -41,7 +41,7 @@ func AbortPopup(format string, args ...interface{}) {
 
 	err := fmt.Sprintf(format, args...)
 	Platform.logger.IPrintf("Displaying AbortPopup with message:\n%s", err)
-	if C.Popup(err+"\x00") != 0 {
+	if C.Popup(err+"\x00") == 0 {
 		Platform.logger.EPrintf("Failed to create popup: %s", C.GoString(C.SDL_GetError()))
 		C.SDL_ClearError()
 	}
