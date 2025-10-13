@@ -30,8 +30,7 @@ import (
 
 /*
 Install installs the helper program ./cmd/cgodep-config as a replacement for
-PKG_CONFIG. Currently it is only able to use dependencies installed through
-this package. It might be possible in the future for it to read PKG_CONFIG files.
+PKG_CONFIG. It will fallback to asking CGODEP_PKG_CONFIG if set or "pkg-config".
 */
 func Install() {
 	tool := "cgodep-config"
