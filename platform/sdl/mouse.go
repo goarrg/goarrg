@@ -146,14 +146,25 @@ func (m *mouse) SetSystemCursor(c input.SystemCursor) {
 	case input.SystemCursorProgress:
 		f(C.SDL_SYSTEM_CURSOR_PROGRESS)
 
-	case input.SystemCursorResizeHorizontal:
-		f(C.SDL_SYSTEM_CURSOR_EW_RESIZE)
-	case input.SystemCursorResizeVertical:
-		f(C.SDL_SYSTEM_CURSOR_NS_RESIZE)
-	case input.SystemCursorResizeDiagonalBackward:
-		f(C.SDL_SYSTEM_CURSOR_NWSE_RESIZE)
-	case input.SystemCursorResizeDiagonalForward:
-		f(C.SDL_SYSTEM_CURSOR_NESW_RESIZE)
+	case input.SystemCursorResizeLeft:
+		f(C.SDL_SYSTEM_CURSOR_W_RESIZE)
+	case input.SystemCursorResizeRight:
+		f(C.SDL_SYSTEM_CURSOR_E_RESIZE)
+
+	case input.SystemCursorResizeTop:
+		f(C.SDL_SYSTEM_CURSOR_N_RESIZE)
+	case input.SystemCursorResizeBottom:
+		f(C.SDL_SYSTEM_CURSOR_S_RESIZE)
+
+	case input.SystemCursorResizeTopLeft:
+		f(C.SDL_SYSTEM_CURSOR_NW_RESIZE)
+	case input.SystemCursorResizeTopRight:
+		f(C.SDL_SYSTEM_CURSOR_NE_RESIZE)
+
+	case input.SystemCursorResizeBottomLeft:
+		f(C.SDL_SYSTEM_CURSOR_SW_RESIZE)
+	case input.SystemCursorResizeBottomRight:
+		f(C.SDL_SYSTEM_CURSOR_SE_RESIZE)
 
 	case input.SystemCursorMove:
 		f(C.SDL_SYSTEM_CURSOR_MOVE)

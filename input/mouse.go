@@ -36,10 +36,17 @@ const (
 	SystemCursorCrosshair
 	SystemCursorProgress
 
-	SystemCursorResizeHorizontal
-	SystemCursorResizeVertical
-	SystemCursorResizeDiagonalBackward
-	SystemCursorResizeDiagonalForward
+	SystemCursorResizeLeft
+	SystemCursorResizeRight
+
+	SystemCursorResizeTop
+	SystemCursorResizeBottom
+
+	SystemCursorResizeTopLeft
+	SystemCursorResizeTopRight
+
+	SystemCursorResizeBottomLeft
+	SystemCursorResizeBottomRight
 
 	SystemCursorMove
 	SystemCursorNotAllowed
