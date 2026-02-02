@@ -50,37 +50,34 @@ It does not actually change os.Getwd().
 func SetWorkingModule(dir string) {
 	// packages[0].Module will be null if dir has no go files so we need to search child dirs too
 	p, err := packages.Load(&packages.Config{Mode: packages.NeedModule}, filepath.Join(dir, "..."))
-	if err != nil {
-		panic(debug.ErrorWrapf(err, "Failed to load package in current directory"))
-	}
-	if len(p) == 0 {
-		panic(debug.Errorf("No go package in current directory"))
-	}
-
-	m := map[string]*packages.Module{}
-	for _, pkg := range p {
-		if pkg.Module != nil {
-			// there may be multiple modules, we store the relative path
-			// so we can later pick the nearest one
-			if r, err := filepath.Rel(pkg.Module.Dir, dir); err == nil {
-				m[r] = pkg.Module
+	if err != nil && len(p) > 0 {
+		m := map[string]*packages.Module{}
+		for _, pkg := range p {
+			if pkg.Module != nil {
+				// there may be multiple modules, we store the relative path
+				// so we can later pick the nearest one
+				if r, err := filepath.Rel(pkg.Module.Dir, dir); err == nil {
+					m[r] = pkg.Module
+				}
 			}
+		}
+
+		if len(m) > 0 {
+			// sort based on how deep in the filetree we are
+			module := m[slices.SortedFunc(maps.Keys(m), func(a, b string) int {
+				return strings.Count(filepath.ToSlash(a), "/") - strings.Count(filepath.ToSlash(b), "/")
+			})[0]]
+			modulePath = module.Path
+			moduleDir = module.Dir
+			moduleDataDir = filepath.Join(moduleDir, ".goarrg")
+			return
 		}
 	}
 
-	if len(m) > 0 {
-		// sort based on how deep in the filetree we are
-		module := m[slices.SortedFunc(maps.Keys(m), func(a, b string) int {
-			return strings.Count(filepath.ToSlash(a), "/") - strings.Count(filepath.ToSlash(b), "/")
-		})[0]]
-		modulePath = module.Path
-		moduleDir = module.Dir
-		moduleDataDir = filepath.Join(moduleDir, ".goarrg")
-	} else { // we are not in a module
-		modulePath = ""
-		moduleDir = dir
-		moduleDataDir = filepath.Join(moduleDir, ".goarrg")
-	}
+	// we are not in a module
+	modulePath = ""
+	moduleDir = dir
+	moduleDataDir = filepath.Join(moduleDir, ".goarrg")
 }
 
 /*
