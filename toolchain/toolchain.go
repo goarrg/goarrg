@@ -37,7 +37,7 @@ type Target struct {
 
 func (t Target) String() string {
 	if (t == Target{}) {
-		return ""
+		return runtime.GOOS + "_" + runtime.GOARCH
 	}
 	return t.OS + "_" + t.Arch
 }
