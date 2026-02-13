@@ -68,15 +68,15 @@ func gnuPrefix(target toolchain.Target) string {
 	arch := gnuArch(target.Arch)
 	abi := gnuABI(target.OS)
 	if arch == "" || abi == "" {
-		return ""
+		panic(debug.Errorf("No known compiler prefix for target: %q", target))
 	}
-	return arch + "-" + abi
+	return arch + "-" + abi + "-"
 }
 
 func gccEnv(target toolchain.Target) map[string]string {
 	prefix := ""
 	if target.CrossCompiling() {
-		prefix = gnuPrefix(target) + "-"
+		prefix = gnuPrefix(target)
 	}
 	m := map[string]string{
 		"CC":  prefix + "gcc",
@@ -94,7 +94,7 @@ func gccEnv(target toolchain.Target) map[string]string {
 func clangEnv(target toolchain.Target) map[string]string {
 	prefix := ""
 	if target.CrossCompiling() {
-		prefix = gnuPrefix(target) + "-"
+		prefix = gnuPrefix(target)
 	}
 	m := map[string]string{
 		"CC":  prefix + "clang",
