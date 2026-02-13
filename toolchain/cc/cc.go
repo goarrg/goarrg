@@ -137,6 +137,24 @@ func Setup(c Config) {
 	}
 }
 
+func FindMacro(cfg Config, macro string) (bool, error) {
+	cc := toolchain.EnvGet("CC")
+	if cfg != (Config{}) {
+		env := compilerEnv(cfg)
+		cc = env["CC"]
+	}
+
+	ex := exec.Command(cc, "-M", "-E", "-")
+	ex.Env = os.Environ()
+	ex.Stdin = bytes.NewReader([]byte("#ifndef " + macro + "\n#error not found\n#endif\n"))
+	out, err := ex.CombinedOutput()
+	if err != nil {
+		return false, debug.Errorf("Failed to find %q using %q: %q", macro, cc, string(out))
+	}
+
+	return true, nil
+}
+
 func FindHeader(cfg Config, header string) (string, error) {
 	cc := toolchain.EnvGet("CC")
 	if cfg != (Config{}) {
