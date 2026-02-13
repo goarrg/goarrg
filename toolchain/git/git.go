@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"goarrg.com/debug"
 	"goarrg.com/toolchain"
 )
 
@@ -35,10 +36,14 @@ func GetRemoteTags(url, pattern string) ([]Ref, error) {
 	if err != nil {
 		return nil, err
 	}
-	refs := strings.Split(strings.TrimSpace(string(ls)), "\n")
+	lsStr := strings.TrimSpace(string(ls))
+	if lsStr == "" {
+		return nil, debug.Errorf("GetRemoteTags: No results")
+	}
+	refs := strings.Split(lsStr, "\n")
 	for _, r := range refs {
 		hash := r[:strings.IndexAny(r, " \t")]
-		ref := strings.TrimSpace(strings.TrimPrefix(r, hash))
+		ref := strings.TrimPrefix(strings.TrimSpace(strings.TrimPrefix(r, hash)), "refs/tags/")
 		out = append(out, Ref{Hash: hash, Name: ref})
 	}
 	return out, nil
@@ -50,10 +55,14 @@ func GetRemoteHeads(url, pattern string) ([]Ref, error) {
 	if err != nil {
 		return nil, err
 	}
-	refs := strings.Split(strings.TrimSpace(string(ls)), "\n")
+	lsStr := strings.TrimSpace(string(ls))
+	if lsStr == "" {
+		return nil, debug.Errorf("GetRemoteHeads: No results")
+	}
+	refs := strings.Split(lsStr, "\n")
 	for _, r := range refs {
 		hash := r[:strings.IndexAny(r, " \t")]
-		ref := strings.TrimSpace(strings.TrimPrefix(r, hash))
+		ref := strings.TrimPrefix(strings.TrimSpace(strings.TrimPrefix(r, hash)), "refs/heads/")
 		out = append(out, Ref{Hash: hash, Name: ref})
 	}
 	return out, nil
@@ -66,7 +75,7 @@ func CloneOrFetch(url, dir string, ref Ref) error {
 			return err
 		}
 		if err := toolchain.Run("git", "-c", "advice.detachedHead=false",
-			"clone", "--branch", ref.Name[strings.Index(ref.Name[5:], "/")+6:], "--depth=1", url, dir); err != nil {
+			"clone", "--branch", ref.Name, "--depth=1", url, dir); err != nil {
 			return err
 		}
 	}
