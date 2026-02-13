@@ -137,14 +137,19 @@ func Setup(c Config) {
 	}
 }
 
-func FindHeader(c Config, header string) (string, error) {
-	env := compilerEnv(c)
-	ex := exec.Command(env["CC"], "-M", "-E", "-")
+func FindHeader(cfg Config, header string) (string, error) {
+	cc := toolchain.EnvGet("CC")
+	if cfg != (Config{}) {
+		env := compilerEnv(cfg)
+		cc = env["CC"]
+	}
+
+	ex := exec.Command(cc, "-M", "-E", "-")
 	ex.Env = os.Environ()
 	ex.Stdin = bytes.NewReader([]byte("#include<" + header + ">"))
 	out, err := ex.CombinedOutput()
 	if err != nil {
-		return "", debug.Errorf("Failed to find %q using %q: %q", header, env["CC"], string(out))
+		return "", debug.Errorf("Failed to find %q using %q: %q", header, cc, string(out))
 	}
 
 	for _, s := range strings.Fields(string(out)) {
@@ -154,7 +159,7 @@ func FindHeader(c Config, header string) (string, error) {
 	}
 
 	// should never be here
-	panic(debug.Errorf("%q found %q but unable to find header in output: %q", env["CC"], header, string(out)))
+	panic(debug.Errorf("%q found %q but unable to find header in output: %q", cc, header, string(out)))
 }
 
 func Installed(c Config) bool {
