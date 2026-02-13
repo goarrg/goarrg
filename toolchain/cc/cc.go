@@ -158,13 +158,15 @@ func FindHeader(c Config, header string) (string, error) {
 }
 
 func Installed(c Config) bool {
+	found := true
 	for _, v := range compilerEnv(c) {
 		if v == "" {
 			continue
 		}
 		if _, err := exec.LookPath(v); err != nil {
-			panic(v)
+			debug.VPrintf("Failed to find: %q", v)
+			found = false
 		}
 	}
-	return true
+	return found
 }
