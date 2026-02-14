@@ -30,8 +30,13 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+type DisableFeatures struct {
+	CGO bool
+}
+
 type Config struct {
-	Target toolchain.Target
+	Target  toolchain.Target
+	Disable DisableFeatures
 }
 
 var goEnvOnce = sync.Once{}
@@ -47,6 +52,12 @@ func Setup(c Config) {
 		toolchain.EnvRegister("GOCACHE", gocache)
 	}
 
+	if c.Target == (toolchain.Target{}) {
+		c.Target = toolchain.Target{
+			OS:   runtime.GOOS,
+			Arch: runtime.GOARCH,
+		}
+	}
 	if !ValidTarget(c.Target) {
 		panic(debug.Errorf("Unknown os/arch combo: %s", c.Target))
 	}
@@ -54,10 +65,17 @@ func Setup(c Config) {
 	toolchain.EnvSet("GOOS", c.Target.OS)
 	toolchain.EnvSet("GOARCH", c.Target.Arch)
 
-	if !CgoSupported(c.Target) {
-		debug.WPrintf("cgo unsupported on target: %s", c.Target)
+	if c.Disable.CGO {
+		toolchain.EnvSet("CGO_ENABLED", "0")
 	} else {
+		if !CgoSupported(c.Target) {
+			panic(debug.Errorf("cgo unsupported on target: %s", c.Target))
+		}
 		toolchain.EnvSet("CGO_ENABLED", "1")
+		switch c.Target.Arch {
+		case "amd64":
+			toolchain.EnvRegister("GOAMD64", "v3")
+		}
 	}
 
 	if c.Target.CrossCompiling() {
