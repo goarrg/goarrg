@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"goarrg.com/debug"
@@ -117,6 +118,42 @@ func compilerEnv(c Config) map[string]string {
 		return clangEnv(c.Target)
 	}
 	panic(debug.Errorf("Unknown compiler value: %d", c.Compiler))
+}
+
+// RegisterCGoFlags must be called before golang.Setup(...) or it will have no effect
+func RegisterCGoFlags(t toolchain.Target, b toolchain.Build) {
+	if t == (toolchain.Target{}) {
+		t = toolchain.Target{
+			OS:   runtime.GOOS,
+			Arch: runtime.GOARCH,
+		}
+	}
+	// flag to silence unavoidable warnings when working with cgo
+	var flags string = "-Wno-dll-attribute-on-redeclaration "
+	var ldflags string
+	switch b {
+	case toolchain.BuildRelease:
+		flags += "-O2 -DNDEBUG"
+		ldflags += "-O2"
+	case toolchain.BuildDevelopment:
+		flags += "-g -O2"
+		ldflags += "-g -O2"
+	case toolchain.BuildDebug:
+		flags += "-g -O0"
+		ldflags += "-g -O0"
+	}
+	switch t.Arch {
+	case "amd64":
+		v := toolchain.EnvGet("GOAMD64")
+		if v == "" {
+			flags += " -march=x86-64-v3"
+		} else {
+			flags += " -march=x86-64-" + v
+		}
+	}
+	toolchain.EnvRegister("CGO_CFLAGS", flags)
+	toolchain.EnvRegister("CGO_CXXFLAGS", flags)
+	toolchain.EnvRegister("CGO_LDFLAGS", ldflags)
 }
 
 type Config struct {
