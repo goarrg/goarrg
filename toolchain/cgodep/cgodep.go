@@ -105,7 +105,7 @@ func InstallDir(name string, target toolchain.Target, build toolchain.Build) str
 	if (target == toolchain.Target{}) {
 		return filepath.Join(DataDir(), name)
 	}
-	return filepath.Join(DataDir(), name, target.String(), build.String())
+	return filepath.Join(DataDir(), name, target.String(), toolchain.EnvGet("CC"), build.String())
 }
 
 /*
