@@ -43,12 +43,12 @@ type SDLConfig struct {
 }
 
 func installSDL(t toolchain.Target, c SDLConfig) error {
-	var sdlVersion string
+	var buildID, sdlVersion string
+	var ref git.Ref
 	srcDir := filepath.Join(cgodep.CacheDir(), "sdl3")
 	installDir := cgodep.InstallDir("sdl3", t, c.Build)
 
 	{
-		var ref git.Ref
 		if c.Tag == "" {
 			refs, err := git.GetRemoteTags(sdlURL, "release-3*")
 			if err != nil {
@@ -62,22 +62,27 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 			}
 			ref = refs[0]
 		}
+		buildID = ref.Name
+		sdlVersion = buildID
 		if c.ForceStatic {
-			sdlVersion = strings.TrimPrefix(ref.Name, "refs/tags/") + "-static" + sdlBuild
-		} else {
-			sdlVersion = strings.TrimPrefix(ref.Name, "refs/tags/") + sdlBuild
+			sdlVersion += "-static"
 		}
-		if cgodep.ReadVersion(installDir) == sdlVersion {
-			return cgodep.SetActiveBuild("sdl3", t, c.Build)
+		sdlVersion += sdlBuild
+	}
+	var rebuild bool
+	{
+		installedVersion := cgodep.ReadVersion(installDir)
+		if installedVersion != sdlVersion {
+			golang.SetShouldCleanCache()
 		}
-		err := git.CloneOrFetch(sdlURL, srcDir, ref)
-		if err != nil {
+		rebuild = !strings.HasPrefix(installedVersion, buildID)
+	}
+	if rebuild {
+		if err := os.RemoveAll(installDir); err != nil {
 			return err
 		}
-	}
 
-	{
-		if err := os.RemoveAll(installDir); err != nil {
+		if err := git.CloneOrFetch(sdlURL, srcDir, ref); err != nil {
 			return err
 		}
 
@@ -95,9 +100,6 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 			"SDL_TEST_LIBRARY":  "0",
 			"SDL_INSTALL_CPACK": "0",
 		}
-		if c.ForceStatic {
-			defs["SDL_SHARED"] = "0"
-		}
 		if err := cmake.Configure(t, c.Build, srcDir, buildDir, installDir, defs); err != nil {
 			return err
 		}
@@ -107,22 +109,20 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 		if err := cmake.Install(buildDir); err != nil {
 			return err
 		}
-	}
 
-	// rename libs to be work around static linking weirdness
-	{
-		sdlLibRenames := [][2]string{
-			{"libSDL3.a", "libSDL3-static.a"},
-		}
-		for _, rename := range sdlLibRenames {
-			oldLib := filepath.Join(installDir, "lib", rename[0])
-			if err := os.Rename(oldLib, filepath.Join(installDir, "lib", rename[1])); err != nil {
-				return debug.ErrorWrapf(err, "Failed to rename %q", rename[0])
+		// rename libs to be work around static linking weirdness
+		{
+			sdlLibRenames := [][2]string{
+				{"libSDL3.a", "libSDL3-static.a"},
+			}
+			for _, rename := range sdlLibRenames {
+				oldLib := filepath.Join(installDir, "lib", rename[0])
+				if err := os.Rename(oldLib, filepath.Join(installDir, "lib", rename[1])); err != nil {
+					return debug.ErrorWrapf(err, "Failed to rename %q", rename[0])
+				}
 			}
 		}
 	}
-
-	golang.SetShouldCleanCache()
 
 	m := cgodep.Meta{
 		Version: sdlVersion,

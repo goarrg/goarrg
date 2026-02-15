@@ -24,9 +24,16 @@ import (
 	"goarrg.com/toolchain/golang"
 )
 
+type VulkanDependencies struct {
+	SDKVersion     string
+	InstallHeaders bool
+	InstallDocs    bool
+	Shaderc        ShadercConfig
+}
+
 type Dependencies struct {
-	SDL       SDLConfig
-	VkHeaders VkHeadersConfig
+	SDL    SDLConfig
+	Vulkan VulkanDependencies
 }
 
 /*
@@ -98,10 +105,25 @@ func Install(c Config) string {
 	if !golang.ValidTarget(c.Target) || !golang.CgoSupported(c.Target) {
 		panic(debug.Errorf("Invalid Target: %+v", c.Target))
 	}
-	if c.Dependencies.VkHeaders.Install {
-		err := installVkHeaders(c.Dependencies.VkHeaders)
-		if err != nil {
-			panic(debug.ErrorWrapf(err, "Failed to install vulkan-headers"))
+	if c.Dependencies.Vulkan != (VulkanDependencies{}) {
+		repos := getVkRepoData(c.Target.OS, c.Dependencies.Vulkan.SDKVersion)
+		if c.Dependencies.Vulkan.InstallHeaders {
+			err := installVkHeaders(repos["Vulkan-Headers"].Tag)
+			if err != nil {
+				panic(debug.ErrorWrapf(err, "Failed to install vulkan-headers"))
+			}
+		}
+		if c.Dependencies.Vulkan.InstallDocs {
+			err := installVkDocs(repos["Vulkan-Docs"].Tag)
+			if err != nil {
+				panic(debug.ErrorWrapf(err, "Failed to install vulkan-docs"))
+			}
+		}
+		if c.Dependencies.Vulkan.Shaderc.Install {
+			err := installShaderc(c.Target, c.Dependencies.Vulkan.Shaderc, repos["shaderc"].Commit)
+			if err != nil {
+				panic(debug.ErrorWrapf(err, "Failed to install shaderc"))
+			}
 		}
 	}
 	if c.Dependencies.SDL.Install {

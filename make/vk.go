@@ -17,70 +17,95 @@ limitations under the License.
 package goarrg
 
 import (
+	"fmt"
 	"path/filepath"
-	"strings"
 
 	"goarrg.com/toolchain"
 	"goarrg.com/toolchain/cgodep"
 	"goarrg.com/toolchain/git"
 	"goarrg.com/toolchain/golang"
+	"goarrg.com/toolchain/web"
 )
 
 const (
-	vkHeadersURL   = "https://github.com/KhronosGroup/Vulkan-Headers.git"
-	vkHeadersBuild = "-goarrg0"
+	vkHeadersURL = "https://github.com/KhronosGroup/Vulkan-Headers.git"
+	vkDocsURL    = "https://github.com/KhronosGroup/Vulkan-Docs.git"
+	vkBuild      = "-goarrg0"
 )
 
-type VkHeadersConfig struct {
-	Install bool
-
-	Branch string
+type vkRepo struct {
+	URL    string
+	Tag    string
+	Commit string
 }
 
-func installVkHeaders(c VkHeadersConfig) error {
+func getVkRepoData(os string, version string) map[string]vkRepo {
+	if version == "" {
+		version = "latest"
+	}
+	switch os {
+	case "linux", "windows":
+	case "darwin":
+		os = "mac"
+	default:
+		panic(fmt.Sprintf("Unsupported os: %s", os))
+	}
+	type config struct {
+		Repos map[string]vkRepo
+	}
+	cfg := config{}
+	err := web.GetJSON(fmt.Sprintf("https://vulkan.lunarg.com/sdk/config/%s/%s/config.json", version, os), &cfg)
+	if err != nil {
+		panic(err)
+	}
+	return cfg.Repos
+}
+
+func installVkHeaders(tag string) error {
 	installDir := cgodep.InstallDir("vulkan-headers", toolchain.Target{}, toolchain.BuildRelease)
 	var ref git.Ref
-	if c.Branch == "" {
-		refs, err := git.GetRemoteHeads(vkHeadersURL, "vulkan-sdk-*")
-		if err != nil {
-			return err
-		}
-		ref = refs[0]
-	} else {
-		refs, err := git.GetRemoteHeads(vkHeadersURL, c.Branch)
-		if err != nil {
-			return err
-		}
-		ref = refs[0]
-	}
-
 	{
-		version := cgodep.ReadVersion(installDir)
-		// search backwards cause branch names have a "-" in them
-		i := strings.LastIndex(version, "-")
-		if i > 0 {
-			j := strings.LastIndex(version[:i], "-")
-			if j > 0 {
-				branch := version[:j]
-				hash := version[j+1 : i]
-				build := version[i:]
-
-				if branch == ref.Name && hash == ref.Hash && build == vkHeadersBuild {
-					return nil
-				}
-			}
+		refs, err := git.GetRemoteTags(vkHeadersURL, tag)
+		if err != nil {
+			return err
 		}
+		ref = refs[0]
 	}
-
+	buildID := ref.Name + "-" + ref.Hash + vkBuild
+	if cgodep.ReadVersion(installDir) == buildID {
+		return nil
+	}
 	err := git.CloneOrFetch(vkHeadersURL, installDir, ref)
 	if err != nil {
 		return err
 	}
-
 	golang.SetShouldCleanCache()
 	return cgodep.WriteMetaFile("vulkan-headers", toolchain.Target{}, toolchain.BuildRelease, cgodep.Meta{
-		Version: ref.Name + "-" + ref.Hash + vkHeadersBuild, Flags: cgodep.Flags{
+		Version: buildID, Flags: cgodep.Flags{
 			CFlags: []string{"-I" + filepath.Join(installDir, "include")},
 		},
+	})
+}
+
+func installVkDocs(tag string) error {
+	installDir := cgodep.InstallDir("vulkan-docs", toolchain.Target{}, toolchain.BuildRelease)
+	var ref git.Ref
+	{
+		refs, err := git.GetRemoteTags(vkDocsURL, tag)
+		if err != nil {
+			return err
+		}
+		ref = refs[0]
+	}
+	buildID := ref.Name + "-" + ref.Hash + vkBuild
+	if cgodep.ReadVersion(installDir) == buildID {
+		return nil
+	}
+	err := git.CloneOrFetch(vkDocsURL, installDir, ref)
+	if err != nil {
+		return err
+	}
+	return cgodep.WriteMetaFile("vulkan-docs", toolchain.Target{}, toolchain.BuildRelease, cgodep.Meta{
+		Version: buildID,
 	})
 }
