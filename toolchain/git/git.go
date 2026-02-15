@@ -69,17 +69,20 @@ func GetRemoteHeads(url, pattern string) ([]Ref, error) {
 }
 
 func CloneOrFetch(url, dir string, ref Ref) error {
+	if ref.Name == "" {
+		ref.Name = ref.Hash
+	}
 	if stat, err := os.Stat(filepath.Join(dir, ".git")); err != nil || !stat.IsDir() {
 		os.RemoveAll(dir)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return err
 		}
 		if err := toolchain.Run("git", "-c", "advice.detachedHead=false",
-			"clone", "--branch", ref.Name, "--depth=1", url, dir); err != nil {
+			"clone", "--depth=1", url, dir); err != nil {
 			return err
 		}
 	}
-	if err := toolchain.RunDir(dir, "git", "fetch", "origin", "--depth=1", ref.Name); err != nil {
+	if err := toolchain.RunDir(dir, "git", "-c", "uploadpack.allowAnySHA1InWant=true", "fetch", "origin", "--depth=1", ref.Name); err != nil {
 		return err
 	}
 	if err := toolchain.RunDir(dir, "git", "-c", "advice.detachedHead=false", "checkout", ref.Hash); err != nil {
