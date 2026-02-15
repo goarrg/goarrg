@@ -17,6 +17,7 @@ limitations under the License.
 package goarrg
 
 import (
+	"runtime"
 	"strings"
 
 	"goarrg.com/debug"
@@ -102,6 +103,12 @@ Install will install all optional dependencies indicated and does any required
 setup and then returns the required build tags to pass to `go build -tags=...`.
 */
 func Install(c Config) string {
+	if c.Target == (toolchain.Target{}) {
+		c.Target = toolchain.Target{
+			OS:   runtime.GOOS,
+			Arch: runtime.GOARCH,
+		}
+	}
 	if !golang.ValidTarget(c.Target) || !golang.CgoSupported(c.Target) {
 		panic(debug.Errorf("Invalid Target: %+v", c.Target))
 	}
