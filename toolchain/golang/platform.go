@@ -18,6 +18,7 @@ package golang
 
 import (
 	"encoding/json"
+	"runtime"
 	"sync"
 
 	"goarrg.com/debug"
@@ -61,12 +62,24 @@ func setupPlatforms() {
 }
 
 func ValidTarget(t toolchain.Target) bool {
+	if t == (toolchain.Target{}) {
+		t = toolchain.Target{
+			OS:   runtime.GOOS,
+			Arch: runtime.GOARCH,
+		}
+	}
 	setupPlatforms()
 	_, ok := platforms[t]
 	return ok
 }
 
 func CgoSupported(t toolchain.Target) bool {
+	if t == (toolchain.Target{}) {
+		t = toolchain.Target{
+			OS:   runtime.GOOS,
+			Arch: runtime.GOARCH,
+		}
+	}
 	setupPlatforms()
 	return platforms[t].cgoSupported
 }
