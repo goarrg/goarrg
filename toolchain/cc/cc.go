@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 
 	"goarrg.com/debug"
@@ -120,14 +119,29 @@ func compilerEnv(c Config) map[string]string {
 	panic(debug.Errorf("Unknown compiler value: %d", c.Compiler))
 }
 
-// RegisterCGoFlags must be called before golang.Setup(...) or it will have no effect
-func RegisterCGoFlags(t toolchain.Target, b toolchain.Build) {
-	if t == (toolchain.Target{}) {
-		t = toolchain.Target{
-			OS:   runtime.GOOS,
-			Arch: runtime.GOARCH,
-		}
+type Config struct {
+	Compiler Compiler
+	Target   toolchain.Target
+}
+
+/*
+Setup sets the various env variables needed to build go programs using cgo.
+[CC|CXX|AR] and RC on windows will be set to known names for Compiler or panic.
+It will set CGO_[C|CXX|LD]FLAGS to the corresponding GOARRG_{Config.Target.Arch}_*FLAGS
+or falling back to GOARRG_*FLAGS env variables if set or to a predefined default (see source code).
+*/
+func Setup(c Config, b toolchain.Build) {
+	debug.IPrintf("Setting up C/C++ toolchain")
+
+	if !Installed(c) {
+		panic(debug.Errorf("Compiler not installed for Config: %+v", c))
 	}
+
+	env := compilerEnv(c)
+	for k, v := range env {
+		toolchain.EnvSet(k, v)
+	}
+
 	// flag to silence unavoidable warnings when working with cgo
 	var flags string = "-Wno-dll-attribute-on-redeclaration "
 	var ldflags string
@@ -142,7 +156,7 @@ func RegisterCGoFlags(t toolchain.Target, b toolchain.Build) {
 		flags += "-g -O0"
 		ldflags += "-g -O0"
 	}
-	switch t.Arch {
+	switch c.Target.Arch {
 	case "amd64":
 		v := toolchain.EnvGet("GOAMD64")
 		if v == "" {
@@ -151,27 +165,22 @@ func RegisterCGoFlags(t toolchain.Target, b toolchain.Build) {
 			flags += " -march=x86-64-" + v
 		}
 	}
-	toolchain.EnvRegister("CGO_CFLAGS", flags)
-	toolchain.EnvRegister("CGO_CXXFLAGS", flags)
-	toolchain.EnvRegister("CGO_LDFLAGS", ldflags)
-}
 
-type Config struct {
-	Compiler Compiler
-	Target   toolchain.Target
-}
-
-func Setup(c Config) {
-	debug.IPrintf("Setting up C/C++ toolchain")
-
-	if !Installed(c) {
-		panic(debug.Errorf("Compiler not installed for Config: %+v", c))
+	setEnv := func(env, archFlags, gFlags, defaultFlags string) {
+		archFlags = toolchain.EnvGet(archFlags)
+		gFlags = toolchain.EnvGet(gFlags)
+		switch {
+		case archFlags != "":
+			toolchain.EnvSet(env, archFlags)
+		case gFlags != "":
+			toolchain.EnvSet(env, gFlags)
+		case defaultFlags != "":
+			toolchain.EnvSet(env, defaultFlags)
+		}
 	}
-
-	env := compilerEnv(c)
-	for k, v := range env {
-		toolchain.EnvSet(k, v)
-	}
+	setEnv("CGO_CFLAGS", "GOARRG_"+strings.ToUpper(c.Target.Arch)+"_CFLAGS", "GOARRG_CFLAGS", flags)
+	setEnv("CGO_CXXFLAGS", "GOARRG_"+strings.ToUpper(c.Target.Arch)+"_CXXFLAGS", "GOARRG_CXXFLAGS", flags)
+	setEnv("CGO_LDFLAGS", "GOARRG_"+strings.ToUpper(c.Target.Arch)+"_LDFLAGS", "GOARRG_LDFLAGS", ldflags)
 }
 
 func FindMacro(cfg Config, macro string) (bool, error) {
