@@ -30,6 +30,8 @@ type VulkanDependencies struct {
 	InstallHeaders bool
 	InstallDocs    bool
 	Shaderc        ShadercConfig
+	SPIRVCross     SPIRVCrossConfig
+	SPIRVReflect   SPIRVReflectConfig
 }
 
 type Dependencies struct {
@@ -130,6 +132,18 @@ func Install(c Config) string {
 			err := installShaderc(c.Target, c.Dependencies.Vulkan.Shaderc, repos["shaderc"].Commit)
 			if err != nil {
 				panic(debug.ErrorWrapf(err, "Failed to install shaderc"))
+			}
+		}
+		if c.Dependencies.Vulkan.SPIRVCross.Install {
+			err := installSPIRVCross(c.Target, c.Dependencies.Vulkan.SPIRVCross, repos["SPIRV-Cross"].Tag)
+			if err != nil {
+				panic(debug.ErrorWrapf(err, "Failed to install spirv-cross"))
+			}
+		}
+		if c.Dependencies.Vulkan.SPIRVReflect.Install {
+			err := installSPIRVReflect(c.Target, c.Dependencies.Vulkan.SPIRVReflect, repos["SPIRV-Reflect"].Tag)
+			if err != nil {
+				panic(debug.ErrorWrapf(err, "Failed to install spirv-reflect"))
 			}
 		}
 	}
