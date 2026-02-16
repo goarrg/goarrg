@@ -75,7 +75,7 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 		if installedVersion != sdlVersion {
 			golang.SetShouldCleanCache()
 		}
-		rebuild = !strings.HasPrefix(installedVersion, buildID)
+		rebuild = !strings.HasPrefix(installedVersion, buildID) || !strings.HasSuffix(installedVersion, sdlBuild)
 	}
 	if rebuild {
 		if err := os.RemoveAll(installDir); err != nil {

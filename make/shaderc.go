@@ -91,7 +91,7 @@ func installShaderc(t toolchain.Target, c ShadercConfig, commit string) error {
 		if installedVersion != shadercVersion {
 			golang.SetShouldCleanCache()
 		}
-		rebuild = !strings.HasPrefix(installedVersion, buildID)
+		rebuild = !strings.HasPrefix(installedVersion, buildID) || !strings.HasSuffix(installedVersion, shadercBuild)
 	}
 	if rebuild {
 		if err := os.RemoveAll(installDir); err != nil {
