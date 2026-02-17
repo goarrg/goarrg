@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"goarrg.com/toolchain"
+	"goarrg.com/toolchain/cc"
 )
 
 /*
@@ -74,7 +75,11 @@ func Configure(t toolchain.Target, b toolchain.Build, srcDir, buildDir, installD
 
 	// windows will default to msvc even with CC/CXX set and we don't want that
 	if runtime.GOOS == "windows" {
-		cmakeArgs = append(cmakeArgs, "-G", "MinGW Makefiles")
+		isMingw32, _ := cc.FindMacro(cc.Config{}, "__MINGW32__")
+		isMingw64, _ := cc.FindMacro(cc.Config{}, "__MINGW64__")
+		if isMingw32 || isMingw64 {
+			cmakeArgs = append(cmakeArgs, "-G", "MinGW Makefiles")
+		}
 	}
 
 	return toolchain.Run("cmake", cmakeArgs...)
