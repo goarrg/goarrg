@@ -17,9 +17,16 @@ limitations under the License.
 package toolchain
 
 import (
+	"errors"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
+	"time"
 
 	"goarrg.com/build"
+	"goarrg.com/debug"
 )
 
 type Build = build.Build
@@ -44,4 +51,56 @@ func (t Target) String() string {
 
 func (t Target) CrossCompiling() bool {
 	return (t != Target{}) && (t.OS != runtime.GOOS || t.Arch != runtime.GOARCH)
+}
+
+/*
+IgnoreBlacklist returns an ignore function that returns true if the path is one of the args passed to IgnoreBlacklist.
+*/
+func IgnoreBlacklist(args ...string) func(string) bool {
+	blacklist := map[string]struct{}{}
+	for _, arg := range args {
+		blacklist[arg] = struct{}{}
+	}
+	return func(path string) bool {
+		_, skip := blacklist[path]
+		return skip
+	}
+}
+
+/*
+ScanDirModTime scans recursively dir and returns the last time a file was modified or error.
+ignore is a function that takes in a path relative to dir and if it returns true, the path is skipped.
+If dir does not exist, returns time.Unix(0, 0)
+*/
+func ScanDirModTime(dir string, ignore func(string) bool) time.Time {
+	latestMod := time.Unix(0, 0)
+	err := filepath.Walk(dir, func(path string, fs fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if path == dir {
+			return err
+		}
+		{
+			rel := strings.TrimPrefix(path, dir+string(filepath.Separator))
+			if ignore != nil && ignore(rel) {
+				if fs.IsDir() {
+					return filepath.SkipDir
+				}
+				return err
+			}
+		}
+		if fs.IsDir() {
+			return err
+		}
+		mod := fs.ModTime()
+		if mod.After(latestMod) {
+			latestMod = mod
+		}
+		return err
+	})
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		panic(debug.ErrorWrapf(err, "Failed to scan %q", dir))
+	}
+	return latestMod
 }
