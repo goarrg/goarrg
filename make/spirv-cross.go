@@ -100,7 +100,7 @@ func installSPIRVCross(t toolchain.Target, c SPIRVCrossConfig, tag string) error
 			"-lspirv-cross-glsl",
 			"-lspirv-cross-util", "-lspirv-cross-core", "-lspirv-cross-reflect",
 		}
-		return cgodep.WriteMetaFile("spirv-cross", t, c.Build, cgodep.Meta{
+		return cgodep.WriteMetaFile(installDir, cgodep.Meta{
 			Version: spirvCrossVersion, Flags: cgodep.Flags{
 				CFlags:        []string{"-I" + filepath.Join(installDir, "include")},
 				LDFlags:       ldflags,
@@ -111,7 +111,7 @@ func installSPIRVCross(t toolchain.Target, c SPIRVCrossConfig, tag string) error
 		ldflags := []string{
 			"-L" + filepath.Join(installDir, "lib"),
 		}
-		return cgodep.WriteMetaFile("spirv-cross", t, c.Build, cgodep.Meta{
+		return cgodep.WriteMetaFile(installDir, cgodep.Meta{
 			Version: spirvCrossVersion, Flags: cgodep.Flags{
 				CFlags:  []string{"-I" + filepath.Join(installDir, "include")},
 				LDFlags: append(ldflags, "-lspirv-cross-c-shared"),

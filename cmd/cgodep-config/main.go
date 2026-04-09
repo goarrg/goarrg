@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -92,6 +93,10 @@ func main() {
 
 	outputFlags, err := cgodep.Resolve(t, mode, flag.Args()...)
 	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		fallback := toolchain.EnvGet("CGODEP_PKG_CONFIG")
 		if fallback == "" {
 			fallback = "pkg-config"
@@ -145,4 +150,5 @@ func main() {
 	for _, f := range outputFlags {
 		fmt.Print(strings.ReplaceAll(f, "\\", "\\\\"), " ")
 	}
+	fmt.Print("\n")
 }

@@ -175,5 +175,5 @@ func installSDL(t toolchain.Target, c SDLConfig) error {
 	if c.ForceStatic {
 		m.Flags.LDFlags = m.Flags.StaticLDFlags
 	}
-	return cgodep.WriteMetaFile("sdl3", t, c.Build, m)
+	return cgodep.WriteMetaFile(installDir, m)
 }

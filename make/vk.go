@@ -80,7 +80,7 @@ func installVkHeaders(tag string) error {
 		return err
 	}
 	golang.SetShouldCleanCache()
-	return cgodep.WriteMetaFile("vulkan-headers", toolchain.Target{}, toolchain.BuildRelease, cgodep.Meta{
+	return cgodep.WriteMetaFile(installDir, cgodep.Meta{
 		Version: buildID, Flags: cgodep.Flags{
 			CFlags: []string{"-I" + filepath.Join(installDir, "include")},
 		},
@@ -105,7 +105,7 @@ func installVkDocs(tag string) error {
 	if err != nil {
 		return err
 	}
-	return cgodep.WriteMetaFile("vulkan-docs", toolchain.Target{}, toolchain.BuildRelease, cgodep.Meta{
+	return cgodep.WriteMetaFile(installDir, cgodep.Meta{
 		Version: buildID,
 	})
 }

@@ -143,7 +143,7 @@ func installShaderc(t toolchain.Target, c ShadercConfig, commit string) error {
 	}
 
 	if c.ForceStatic {
-		return cgodep.WriteMetaFile("shaderc", t, c.Build, cgodep.Meta{
+		return cgodep.WriteMetaFile(installDir, cgodep.Meta{
 			Version: shadercVersion,
 			Flags: cgodep.Flags{
 				CFlags:        []string{"-I" + filepath.Join(installDir, "include")},
@@ -152,7 +152,7 @@ func installShaderc(t toolchain.Target, c ShadercConfig, commit string) error {
 			},
 		})
 	} else {
-		return cgodep.WriteMetaFile("shaderc", t, c.Build, cgodep.Meta{
+		return cgodep.WriteMetaFile(installDir, cgodep.Meta{
 			Version: shadercVersion,
 			Flags: cgodep.Flags{
 				CFlags:        []string{"-I" + filepath.Join(installDir, "include")},

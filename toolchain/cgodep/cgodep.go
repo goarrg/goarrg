@@ -105,6 +105,7 @@ func InstallDir(name string, target toolchain.Target, build toolchain.Build) str
 	if (target == toolchain.Target{}) {
 		return filepath.Join(DataDir(), name)
 	}
+	// any changes must be reflected in SetActiveBuild, WriteMetaFile and Resolve
 	return filepath.Join(DataDir(), name, target.String(), toolchain.EnvGet("CC"), build.String())
 }
 
@@ -112,38 +113,42 @@ func InstallDir(name string, target toolchain.Target, build toolchain.Build) str
 SetActiveBuild is used to select which build should be used for building. The
 active build is independent for each target.
 */
-func SetActiveBuild(name string, target toolchain.Target, build toolchain.Build) error {
-	if (target == toolchain.Target{}) {
-		return nil
-	}
-
-	installedMetaFile := filepath.Join(InstallDir(name, target, build), metaFileName)
+func SetActiveBuild(installDir string) error {
+	installedMetaFile := filepath.Join(installDir, metaFileName)
 	fIn, err := os.Open(installedMetaFile)
 	if err != nil {
 		return debug.ErrorWrapf(err, "Failed to read: %q", installedMetaFile)
 	}
 	defer fIn.Close()
 
-	resolveMetaFile := filepath.Join(filepath.Join(DataDir(), name, target.String()), metaFileName)
-	fOut, err := os.OpenFile(resolveMetaFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o644)
-	if err != nil {
-		return debug.ErrorWrapf(err, "Failed to create: %q", resolveMetaFile)
-	}
-	defer fOut.Close()
+	write := func(outFile string) error {
+		_, err := fIn.Seek(0, io.SeekStart)
+		if err != nil {
+			return debug.ErrorWrapf(err, "Failed to seek file")
+		}
+		fOut, err := os.OpenFile(outFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o644)
+		if err != nil {
+			return debug.ErrorWrapf(err, "Failed to create: %q", outFile)
+		}
+		defer fOut.Close()
 
-	_, err = io.Copy(fOut, fIn)
-	return debug.ErrorWrapf(err, "Failed to write metafile")
+		_, err = io.Copy(fOut, fIn)
+		return err
+	}
+	if err := write(filepath.Join(installDir, "..", metaFileName)); err != nil {
+		return debug.ErrorWrapf(err, "Failed to write metafile")
+	}
+	return debug.ErrorWrapf(write(filepath.Join(installDir, "..", "..", metaFileName)), "Failed to write metafile")
 }
 
 /*
-WriteMetaFile writes the metadata for name to InstallDir.
+WriteMetaFile writes the metadata for name to installDir.
 */
-func WriteMetaFile(name string, target toolchain.Target, build toolchain.Build, m Meta) error {
+func WriteMetaFile(installDir string, m Meta) error {
 	j, err := json.Marshal(m)
 	if err != nil {
 		return debug.ErrorWrapf(err, "Failed to marshal metafile")
 	}
-	installDir := InstallDir(name, target, build)
 	metaFile := filepath.Join(installDir, metaFileName)
 	if err := os.MkdirAll(installDir, 0o755); err != nil {
 		return err
@@ -151,14 +156,14 @@ func WriteMetaFile(name string, target toolchain.Target, build toolchain.Build, 
 	if err := os.WriteFile(metaFile, j, 0o644); err != nil {
 		return debug.ErrorWrapf(err, "Failed to write metafile")
 	}
-	return SetActiveBuild(name, target, build)
+	return SetActiveBuild(installDir)
 }
 
 /*
 ReadMetaFile returns the metadata located at dir and nil or nil and error on error.
 */
-func ReadMetaFile(dir string) (Meta, error) {
-	metaFile := filepath.Join(dir, metaFileName)
+func ReadMetaFile(installDir string) (Meta, error) {
+	metaFile := filepath.Join(installDir, metaFileName)
 	j, err := os.ReadFile(metaFile)
 	if err != nil {
 		return Meta{}, debug.ErrorWrapf(err, "Failed to read: %q", metaFile)
@@ -172,8 +177,8 @@ func ReadMetaFile(dir string) (Meta, error) {
 ReadVersion is a convenience function that is basically calling ReadMetaFile
 and returning the version or panics on error unless error is os.ErrNotExist.
 */
-func ReadVersion(dir string) string {
-	m, err := ReadMetaFile(dir)
+func ReadVersion(installDir string) string {
+	m, err := ReadMetaFile(installDir)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		panic(err)
 	}

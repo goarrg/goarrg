@@ -86,7 +86,7 @@ func installSPIRVReflect(t toolchain.Target, c SPIRVReflectConfig, tag string) e
 			return err
 		}
 	}
-	return cgodep.WriteMetaFile("spirv-reflect", t, c.Build, cgodep.Meta{
+	return cgodep.WriteMetaFile(installDir, cgodep.Meta{
 		Version: spirvReflectVersion,
 		Flags: cgodep.Flags{
 			CFlags:        []string{"-I" + filepath.Join(installDir, "include")},

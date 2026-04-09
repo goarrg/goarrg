@@ -83,27 +83,42 @@ func Resolve(target toolchain.Target, mode ResolveMode, deps ...string) ([]strin
 		var err error
 
 		for _, search := range searchList {
-			dir := filepath.Join(search, d, target.String())
-			m, err = ReadMetaFile(dir)
-			if err == nil {
-				break
-			}
-			if !errors.Is(err, os.ErrNotExist) { // dep found but failed to load
-				return nil, debug.ErrorWrapf(err, "Failed to resolve %q", d)
+			if toolchain.EnvGet("CC") != "" {
+				dir := filepath.Join(search, d, target.String(), toolchain.EnvGet("CC"))
+				m, err = ReadMetaFile(dir)
+				if err == nil {
+					break
+				}
+				if !errors.Is(err, os.ErrNotExist) { // dep found but failed to load
+					return nil, debug.ErrorWrapf(err, "Failed to resolve %q", d)
+				}
 			}
 
-			dir = filepath.Join(search, d)
-			m, err = ReadMetaFile(dir)
-			if err == nil {
-				break
+			{
+				dir := filepath.Join(search, d, target.String())
+				m, err = ReadMetaFile(dir)
+				if err == nil {
+					break
+				}
+				if !errors.Is(err, os.ErrNotExist) { // dep found but failed to load
+					return nil, debug.ErrorWrapf(err, "Failed to resolve %q", d)
+				}
 			}
-			if !errors.Is(err, os.ErrNotExist) { // dep found but failed to load
-				return nil, debug.ErrorWrapf(err, "Failed to resolve %q", d)
+
+			{
+				dir := filepath.Join(search, d)
+				m, err = ReadMetaFile(dir)
+				if err == nil {
+					break
+				}
+				if !errors.Is(err, os.ErrNotExist) { // dep found but failed to load
+					return nil, debug.ErrorWrapf(err, "Failed to resolve %q", d)
+				}
 			}
 		}
 
 		if err != nil { // dep not found anywhere
-			return nil, debug.ErrorWrapf(debug.Errorf("Dependency not installed"), "Failed to resolve %q", d)
+			return nil, debug.ErrorWrapf(os.ErrNotExist, "Failed to resolve %q", d)
 		}
 
 		if (mode & ResolveCFlags) == ResolveCFlags {
