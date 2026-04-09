@@ -36,7 +36,7 @@ const (
 
 /*
 Resolve searches for the dependencies listed in deps and returns the data requested
-by mode.
+by mode. If mode is ResolveExists, will return version strings.
 */
 func Resolve(target toolchain.Target, mode ResolveMode, deps ...string) ([]string, error) {
 	searchPath := os.Getenv("CGODEP_PATH")
@@ -121,14 +121,18 @@ func Resolve(target toolchain.Target, mode ResolveMode, deps ...string) ([]strin
 			return nil, debug.ErrorWrapf(os.ErrNotExist, "Failed to resolve %q", d)
 		}
 
-		if (mode & ResolveCFlags) == ResolveCFlags {
-			output = append(output, m.Flags.CFlags...)
-		}
-		if (mode & ResolveLDFlags) == ResolveLDFlags {
-			if (mode & ResolveStaticFlags) == ResolveStaticFlags {
-				output = append(output, m.Flags.StaticLDFlags...)
-			} else {
-				output = append(output, m.Flags.LDFlags...)
+		if mode == ResolveExists {
+			output = append(output, m.Version)
+		} else {
+			if (mode & ResolveCFlags) == ResolveCFlags {
+				output = append(output, m.Flags.CFlags...)
+			}
+			if (mode & ResolveLDFlags) == ResolveLDFlags {
+				if (mode & ResolveStaticFlags) == ResolveStaticFlags {
+					output = append(output, m.Flags.StaticLDFlags...)
+				} else {
+					output = append(output, m.Flags.LDFlags...)
+				}
 			}
 		}
 	}

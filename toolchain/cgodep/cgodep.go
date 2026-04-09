@@ -65,7 +65,48 @@ type Flags struct {
 
 type Meta struct {
 	Version string
-	Flags   Flags
+	// Dependencies is a map of dependency names to version strings,
+	// it is used only for the purpose of detecting a need to rebuild.
+	Dependencies map[string]string
+	Flags        Flags
+}
+
+/*
+SetDependencies clears m.Dependencies and sets it to the resolved current versions
+of the dependencies given. An error is returned when there is a problem resolving
+the versions.
+*/
+func (m *Meta) SetDependencies(target toolchain.Target, deps ...string) error {
+	m.Dependencies = map[string]string{}
+	versions, err := Resolve(target, ResolveExists, deps...)
+	if err != nil {
+		return debug.ErrorWrapf(err, "Failed to resolve dependency version")
+	}
+	for i, d := range deps {
+		m.Dependencies[d] = versions[i]
+	}
+	return nil
+}
+
+/*
+CompareDependencies returns true only when m.Dependencies matches exactly what
+it would've been set to if SetDependencies was called with deps. An error is returned
+when there was a problem resolving the versions.
+*/
+func (m *Meta) CompareDependencies(target toolchain.Target, deps ...string) (bool, error) {
+	currentVersions, err := Resolve(target, ResolveExists, deps...)
+	if err != nil {
+		return false, debug.ErrorWrapf(err, "Failed to resolve dependency version")
+	}
+	if len(m.Dependencies) != len(deps) {
+		return false, nil
+	}
+	for i, d := range deps {
+		if currentVersions[i] != m.Dependencies[d] {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 const metaFileName = "goarrg_cgodep.json"
