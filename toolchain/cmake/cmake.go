@@ -90,7 +90,7 @@ Build will build the pre-configured cmake project located at buildDir.
 Requires cmake 3.0 for "--build"
 */
 func Build(buildDir string) error {
-	return toolchain.Run("cmake", "--build", buildDir, "-j", strconv.Itoa(runtime.NumCPU()))
+	return toolchain.Run("cmake", "--build", buildDir, "-j", strconv.Itoa(max(1, runtime.NumCPU()-2)))
 }
 
 /*
