@@ -197,6 +197,9 @@ func WriteMetaFile(installDir string, m Meta) error {
 	if err := os.WriteFile(metaFile, j, 0o644); err != nil {
 		return debug.ErrorWrapf(err, "Failed to write metafile")
 	}
+	if filepath.Dir(installDir) == DataDir() {
+		return nil
+	}
 	return SetActiveBuild(installDir)
 }
 
